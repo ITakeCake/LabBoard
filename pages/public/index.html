@@ -197,7 +197,7 @@
   .throw:hover td{background:var(--panel2)}
   .thdet td{background:var(--panel2);font-size:12px;white-space:normal;line-height:1.9}
   .gapx{color:var(--dim);text-decoration:line-through}
-  /* ---------- WALL MODE (Blake 2026-08-20): TV/projector view. Every machine on one
+  /* ---------- WALL MODE (2026-08-20): TV/projector view. Every machine on one
      screen, zero scrolling - tiles autoscale to the biggest size that still fits.
      IBM Plex Sans (chosen over Inter/Space Grotesk/Barlow/Bebas in the mockup round). */
   #wall{position:fixed;inset:0;background:#0b0d11;z-index:50;display:none;flex-direction:column;
@@ -250,7 +250,7 @@
   .ltable th.sortable{cursor:pointer;user-select:none}
   .ltable th.sortable:hover{color:var(--ink)}
   .ltable .sarr{color:var(--accent);font-size:9px}
-  /* light-mode auto-switch REMOVED (Blake 2026-08-20): school laptops run Windows
+  /* light-mode auto-switch REMOVED (2026-08-20): school laptops run Windows
      light theme and the site flipped white on them. One dark look everywhere. */
 </style>
 </head>
@@ -278,7 +278,7 @@
   <button class="mbtn m-override" onclick="bulkMark('override')">Override good</button>
   <button class="mbtn m-clear" onclick="bulkMark('clear')">Clear</button>
 </span></div>
-<!-- item 10 (variant B): live-feed strip on every page. Blake picks strip vs tab later. -->
+<!-- item 10 (variant B): live-feed strip on every page. Strip vs tab is still open. -->
 <div id="feedstrip" class="feedstrip"></div>
 <div class="wrap">
   <div class="genline" id="gen">loading…</div>
@@ -319,7 +319,7 @@ const TABS = [
   { name:'Live Feed', kind:'feed',        search:false },
   { name:'Stats',     kind:'stats',       search:false },
   { name:'Burndown',  kind:'burndown',    search:false },
-  // Timing tab HIDDEN for now (Blake, 2026-08-20) — everything still works, put
+  // Timing tab HIDDEN for now (2026-08-20) — everything still works, put
   // this line back to re-enable: { name:'Timing', kind:'timing', search:false },
   { name:'Image',     kind:'image',       search:false },
   { name:'Print Station', kind:'print',   search:false },
@@ -421,8 +421,8 @@ async function loadStats(g){
   drawStats();
 }
 async function stFillApps(){
-  // the card sub-select lives OUTSIDE the main metric list on purpose - Blake doesn't
-  // want the y-axis dropdown flooded with every card name.
+  // the card sub-select lives OUTSIDE the main metric list on purpose: the
+  // y-axis dropdown must not be flooded with every card name.
   const sel=document.getElementById('stApp'); if(!sel) return;
   if(statsMetric!=='card'){ sel.style.display='none'; return; }
   if(!sel.options.length){
@@ -468,7 +468,7 @@ function svgChart(series, metric, target){
     '<svg viewBox="0 0 '+W+' '+H+'" class="chart" preserveAspectRatio="xMidYMid meet">'+
     grid+'<path d="'+area+'" class="area"/><polyline points="'+pts+'" class="line"/>'+dots+tline+xl+'</svg>';
 }
-// ---- Timing / per-day throughput (Blake, 2026-08-20) ----------------------
+// ---- Timing / per-day throughput (2026-08-20) ----------------------
 // One fetch ships every COMPLETED machine (start, finish, gaps >= 30 min, app
 // timeline, sticks). Everything else — room filter, date range, the "ignore
 // gaps > X h" checkbox, sorting — is client-side and instant.
@@ -579,7 +579,7 @@ async function drawThroughputStats(c){
   c.innerHTML='<div class="muted">Loading…</div>';
   try{
     await thrFetch();
-    // date range defaults to the FIRST log of the current selection (Blake's rule)
+    // date range defaults to the FIRST log of the current selection (the design rule)
     if(statsDatesAuto){
       const e=thrEarliest(statsRoom);
       if(e){ statsFrom=e; statsTo=new Date().toISOString().slice(0,10);
@@ -920,7 +920,7 @@ function openSlot(roomKey, num){
 // ---- wall popover: same info, floated NEXT to the clicked tile ----
 function openWallPop(roomKey, num, ev){
   if(ev){ ev.stopPropagation(); }
-  /* muted for now (Blake 2026-08-20): wallThud(); */
+  /* muted for now (2026-08-20): wallThud(); */
   // clicking the SAME machine again toggles the popover closed
   const key='m:'+roomKey+':'+num;
   if(wallPopKey===key){ closeWallPop(); return; }
@@ -989,7 +989,7 @@ function placeWallPop(t){
 // ---- room popover: click a room CARD -> everything being installed in that room ----
 async function openWallRoomPop(roomKey, ev){
   if(ev) ev.stopPropagation();
-  /* muted for now (Blake 2026-08-20): wallPaper(); */
+  /* muted for now (2026-08-20): wallPaper(); */
   // same-card click toggles closed, matching the machine tiles
   const key='r:'+roomKey;
   if(wallPopKey===key){ closeWallPop(); return; }
@@ -1006,8 +1006,8 @@ async function openWallRoomPop(roomKey, ev){
     const d=await (await fetch('/api/auditinfo?room='+encodeURIComponent(roomKey),{headers:{'Accept':'application/json'}})).json();
     if(d.ok&&Array.isArray(d.apps)) cfg=d.apps;
   }catch(e){}
-  // just what the CONFIG says this room gets - no live counts, no bars (Blake:
-  // "that adds more tracking but adds confusion")
+  // just what the CONFIG says this room gets - no live counts, no bars. Live
+  // counts here add more tracking and more confusion, not more signal.
   const rows=cfg.map(n=>'<div class="wrp"><span title="'+esc(n)+'">'+esc(n)+'</span></div>').join('')
     ||'<div class="muted">No software configured for this room.</div>';
   p.querySelector('.wpb').innerHTML=title+
@@ -1295,7 +1295,7 @@ async function panelMark(state){
   if(d.ok){ closePanel(); lastHash=''; poll(); } else alert('Mark failed: '+(d.error||'error'));
 }
 // ---- per-PC notes (free-form scratchpad, orthogonal to marks) ----
-// A LOG, not a single slot (Blake 2026-08-21). The API now sends pcNotes
+// A LOG, not a single slot (2026-08-21). The API now sends pcNotes
 // (every note since the last clear, newest first); each renders as its own
 // block, and the entry box is always BLANK - typing adds a note, it never
 // edits the old one. "Clear all notes" posts one empty note, which the fold

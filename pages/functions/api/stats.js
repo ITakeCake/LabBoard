@@ -50,7 +50,7 @@ export async function onRequest(context) {
   } catch (e) { return json({ ok: false, error: String(e && e.message ? e.message : e) }, 500); }
 }
 
-// Shared "when did each machine finish?" derivation (Blake's rule: first "nothing
+// Shared "when did each machine finish?" derivation (the design rule: first "nothing
 // done" run -> first "everything Gucci" run). Per machine: startDay = its earliest
 // observation; doneDay = the LATEST of the first-installed days across every expected
 // app (master-pushed room_apps) + __gp__ + __cm__. Machines missing any expected piece

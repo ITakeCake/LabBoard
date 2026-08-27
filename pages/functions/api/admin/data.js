@@ -1,7 +1,7 @@
 // POST /api/admin/data — the data isolate / restore / delete tool (theFuture item 15).
 //
 // Sits behind the dashboard's Basic Auth (functions/_middleware.js allows POST only on
-// /api/admin/*). Blake's design: "move this specific chunk of data to its own isolated
+// /api/admin/*). the design: "move this specific chunk of data to its own isolated
 // area where the rest of the code can't see it, then either delete or restore it."
 //
 //   isolate  {by, why, machine?, stick?, from?, to?}  -> moves matching rows from
@@ -14,7 +14,7 @@
 //   list     {}                                       -> batches currently isolated.
 //
 // Every action is loudly logged: console + an alerts row (delete = critical), so it
-// shows on the dashboard's alert banner and (if the webhook is set) pings Blake.
+// shows on the dashboard's alert banner and (if the webhook is set) pings the admin.
 export async function onRequest(context) {
   const { env, request } = context;
   if (request.method !== 'POST') return json({ ok: false, error: 'POST only' }, 405);

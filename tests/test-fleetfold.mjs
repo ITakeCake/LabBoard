@@ -34,7 +34,7 @@ ok('overrideTile maps states', () => {
 ok('obs newer than mark -> observed green kept', () => {
   const out = foldFleet({
     results: green('55A-1', '2026-08-10T10:00:00'),
-    markRows: [{ machine: '55A-1', state: 'missing', ts: '2026-08-01T09:00:00', by: 'Blake', note: 'old' }],
+    markRows: [{ machine: '55A-1', state: 'missing', ts: '2026-08-01T09:00:00', by: 'admin', note: 'old' }],
   });
   assert.equal(findM(out, '55A-1').state, 'green');
 });
@@ -43,11 +43,11 @@ ok('obs newer than mark -> observed green kept', () => {
 ok('mark newer than obs -> blue + provenance', () => {
   const out = foldFleet({
     results: green('55A-2', '2026-08-10T10:00:00'),
-    markRows: [{ machine: '55A-2', state: 'missing', ts: '2026-08-15T09:00:00', by: 'Blake', note: 'reported missing' }],
+    markRows: [{ machine: '55A-2', state: 'missing', ts: '2026-08-15T09:00:00', by: 'admin', note: 'reported missing' }],
   });
   const m = findM(out, '55A-2');
   assert.equal(m.state, 'blue');
-  assert.equal(m.markBy, 'Blake');
+  assert.equal(m.markBy, 'admin');
   assert.equal(m.markNote, 'reported missing');
 });
 
@@ -55,7 +55,7 @@ ok('mark newer than obs -> blue + provenance', () => {
 ok('request on unseen machine -> broken tile appears', () => {
   const out = foldFleet({
     results: [],
-    reqRows: [{ machine: '55A-9', state: 'broken', ts: '2026-08-16T12:00:00', by: 'Blake', note: 'phys broke', applied: 1 }],
+    reqRows: [{ machine: '55A-9', state: 'broken', ts: '2026-08-16T12:00:00', by: 'admin', note: 'phys broke', applied: 1 }],
   });
   const m = findM(out, '55A-9');
   assert.ok(m, 'machine 55A-9 should exist');
@@ -66,8 +66,8 @@ ok('request on unseen machine -> broken tile appears', () => {
 ok('clear (newest) cancels a newer mark -> green kept', () => {
   const out = foldFleet({
     results: green('55A-3', '2026-08-10T10:00:00'),
-    markRows: [{ machine: '55A-3', state: 'missing', ts: '2026-08-12T09:00:00', by: 'Blake' }],
-    reqRows: [{ machine: '55A-3', state: 'clear', ts: '2026-08-20T09:00:00', by: 'Blake', applied: 1 }],
+    markRows: [{ machine: '55A-3', state: 'missing', ts: '2026-08-12T09:00:00', by: 'admin' }],
+    reqRows: [{ machine: '55A-3', state: 'clear', ts: '2026-08-20T09:00:00', by: 'admin', applied: 1 }],
   });
   assert.equal(findM(out, '55A-3').state, 'green');
 });
@@ -76,11 +76,11 @@ ok('clear (newest) cancels a newer mark -> green kept', () => {
 ok('verified request (newer) turns yellow -> green', () => {
   const out = foldFleet({
     results: [{ machine: '55A-4', app_id: 'appX', verdict: 'missing', ts: '2026-08-10T10:00:00', stick_id: 's1', obs_id: '4x' }],
-    reqRows: [{ machine: '55A-4', state: 'verified', ts: '2026-08-11T10:00:00', by: 'Blake', note: 'looks fine', applied: 1 }],
+    reqRows: [{ machine: '55A-4', state: 'verified', ts: '2026-08-11T10:00:00', by: 'admin', note: 'looks fine', applied: 1 }],
   });
   const m = findM(out, '55A-4');
   assert.equal(m.state, 'green');
-  assert.equal(m.markBy, 'Blake');
+  assert.equal(m.markBy, 'admin');
 });
 
 // F — tie between mark and request at equal ts => request wins (more intentional)
@@ -88,7 +88,7 @@ ok('equal-ts tie: request beats mark', () => {
   const out = foldFleet({
     results: green('55A-5', '2026-08-10T10:00:00'),
     markRows: [{ machine: '55A-5', state: 'missing', ts: '2026-08-15T09:00:00', by: 'master' }],
-    reqRows: [{ machine: '55A-5', state: 'broken', ts: '2026-08-15T09:00:00', by: 'Blake', applied: 1 }],
+    reqRows: [{ machine: '55A-5', state: 'broken', ts: '2026-08-15T09:00:00', by: 'admin', applied: 1 }],
   });
   assert.equal(findM(out, '55A-5').state, 'broken');
 });

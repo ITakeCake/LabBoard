@@ -139,7 +139,7 @@ export function foldFleet({ results = [], roomRows = [], markRows = [], reqRows 
     (expectedByRoom[a.room_key] || (expectedByRoom[a.room_key] = new Set())).add(a.app_id);
   }
 
-  // Free-form per-PC notes, as a LOG (Blake 2026-08-21: "you can only have one
+  // Free-form per-PC notes, as a LOG (2026-08-21: "you can only have one
   // note for some reason?"). machine_notes was append-only all along - only this
   // fold collapsed it to newest-wins, so every note past the first LOOKED
   // overwritten. Now: pcNotes = every note since the last clear, newest first;
@@ -203,7 +203,7 @@ export function foldFleet({ results = [], roomRows = [], markRows = [], reqRows 
     const m = machines[key];
     m.sticks = Object.keys(m.sticks);
     place(m);
-    // GENERATION PARTITION (Blake 2026-08-20: "the old information dont matter no
+    // GENERATION PARTITION (2026-08-20: "the old information dont matter no
     // more"). Machine identity is (hostname, image date). A re-imaged machine starts
     // a new life: evidence from a PREVIOUS imaged_gen must not colour the current one
     // (10101LAB34-63: re-imaged 08-19 as a bare 61+ station, but its 08-03 life's
@@ -217,7 +217,7 @@ export function foldFleet({ results = [], roomRows = [], markRows = [], reqRows 
       if (String(m.gpGen == null ? '' : m.gpGen) !== gen) m.gp = null;
       if (String(m.cmGen == null ? '' : m.cmGen) !== gen) m.cm = null;
     }
-    // SCOPE FILTER (Blake 2026-08-19: "it's only missing if it's missing from that room's
+    // SCOPE FILTER (2026-08-19: "it's only missing if it's missing from that room's
     // config"). A stick that scanned a machine against a WIDER app catalogue than its room
     // needs (e.g. ENG 10101LAB34-18 scanned with the Science set) reported ~48 out-of-scope
     // programs as 'missing' — false alarms for software the machine should never have. Drop
@@ -313,7 +313,7 @@ export function foldFleet({ results = [], roomRows = [], markRows = [], reqRows 
     const slots = [];
     for (let n = 1; n <= size; n++) {
       const m = R.byNum[n];
-      // "machines" = every slot on the board, touched or not (Blake 2026-08-20:
+      // "machines" = every slot on the board, touched or not (2026-08-20:
       // the headline number should be the TOTAL fleet listed, not just what a
       // stick has seen). Per-colour tallies still split touched vs untouched.
       if (m) { slots.push(m); summary[m.state]++; summary.machines++; }

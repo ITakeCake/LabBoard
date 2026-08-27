@@ -12,7 +12,7 @@
 // LOGGING: every step is console-logged as JSON (view with `wrangler tail` or the
 // Cloudflare Observability tab). ANOMALIES (NaN/Infinity, out-of-bounds numbers,
 // mostly-invalid batches, rate trips, oversized logs) are written to the `alerts`
-// table, console.error'd, and — if ALERT_WEBHOOK is set — POSTed to Blake in real time.
+// table, console.error'd, and — if ALERT_WEBHOOK is set — POSTed to the admin in real time.
 
 const MAX_ROWS_PER_REQUEST = 5000;  // one request may carry a big backfill chunk
 const MAX_REQUESTS_PER_MIN = 600;   // coarse runaway backstop — generous enough for a

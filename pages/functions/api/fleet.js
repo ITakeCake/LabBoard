@@ -30,7 +30,7 @@ export async function onRequest(context) {
                              -- image outranks a later transient failure (CM sometimes
                              -- reports failed=10 in a burst and succeeds on retry 15s
                              -- later; newest-wins let one bad reading erase a real
-                             -- success and strand machines purple - Blake 2026-08-21).
+                             -- success and strand machines purple - 2026-08-21).
                              -- Real apps keep pure newest-wins (CASE is constant 1).
                              CASE WHEN o.app_id IN ('__gp__','__cm__') AND o.verdict='installed' THEN 0 ELSE 1 END,
                              o.ts DESC, o.id DESC) AS rn

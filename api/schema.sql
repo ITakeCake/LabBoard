@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS rate (
 
 -- Automated critical-error / anomaly log. Every suspicious thing the Worker sees
 -- (NaN/Infinity/out-of-bounds numbers, mostly-invalid batches, rate trips, oversized
--- logs) lands here, is console-logged, and (if ALERT_WEBHOOK is set) pushed to Blake.
+-- logs) lands here, is console-logged, and (if ALERT_WEBHOOK is set) pushed to the admin.
 CREATE TABLE IF NOT EXISTS alerts (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   level        TEXT NOT NULL,                     -- info | warn | critical
@@ -87,12 +87,12 @@ CREATE TABLE IF NOT EXISTS rooms (
 -- so un-marking clears cleanly. Machine-keyed (touched machines only).
 -- `ts` is the mark's OWN assertion time (master local wall-clock), not server-now, so
 -- the dashboard's newest-sighting-wins fold can compare it against observation ts.
--- `by`/`note` carry provenance for the hover note ("Blake reported missing on <date>").
+-- `by`/`note` carry provenance for the hover note ("admin reported missing on <date>").
 CREATE TABLE IF NOT EXISTS marks (
   machine TEXT PRIMARY KEY,
   state   TEXT NOT NULL,                          -- broken | missing
   ts      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  by      TEXT,                                   -- who asserted it (e.g. 'master', 'Blake')
+  by      TEXT,                                   -- who asserted it (e.g. 'master', 'admin')
   note    TEXT                                    -- rendered hover note
 );
 
