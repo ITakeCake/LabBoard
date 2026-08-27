@@ -1,0 +1,19 @@
+name = "labboard-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# D1: observations, tokens, logs pointers, rate buckets.
+# database_id is filled in after:  wrangler d1 create labboard
+[[d1_databases]]
+binding = "DB"
+database_name = "labboard"
+database_id = "REPLACE-AFTER-wrangler-d1-create"
+
+# R2: failed-install log blobs (Phase 1). R2 must first be ENABLED in the Cloudflare
+# dashboard (account-level; wants a payment method even on the free tier). Then run
+#   wrangler r2 bucket create labboard-logs
+# and UNCOMMENT the binding below + redeploy to light up Phase 1 (/log).
+# [[r2_buckets]]
+# binding = "LOGS"
+# bucket_name = "labboard-logs"

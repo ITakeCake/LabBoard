@@ -1,0 +1,1534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LabBoard — Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1014; --panel:#151922; --panel2:#1b2029; --line:#262c37; --ink:#e7ecf2; --dim:#8a93a2; --accent:#4c8bf5;
+    --green:#2ea043; --yellow:#d4a017; --purple:#8957e5; --red:#e5484d; --orange:#d9730d; --blue:#3b6fb0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  button,input,select,textarea{font-family:inherit}
+
+  /* ---------- TOP BAR: blue gradient, underline tabs, per-tab local search ---------- */
+  .topbar{display:flex;align-items:stretch;gap:20px;height:56px;padding:0 20px;
+          background:linear-gradient(115deg,#2b3fb8,#3a2f8a 60%,#241d52)}
+  .mark{display:flex;align-items:center;font-size:17px;font-weight:800;letter-spacing:.3px;flex:0 0 auto;color:#fff}
+  .mark span{color:#bcd0ff}
+  .tabs{display:flex;align-items:stretch;gap:2px;overflow-x:auto}
+  .tab{position:relative;display:flex;align-items:center;padding:0 14px;font-size:12.5px;font-weight:650;
+       color:#c7cfe8;cursor:pointer;white-space:nowrap;background:none;border:none}
+  .tab:hover{color:#fff}
+  .tab.on{color:#fff}
+  .tab.on::after{content:'';position:absolute;left:8px;right:8px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:#fff}
+  .barright{margin-left:auto;display:flex;align-items:center;gap:10px;flex:0 0 auto}
+  .search{display:flex;align-items:center;gap:7px;background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.16);
+          border-radius:8px;padding:0 10px;height:34px;min-width:210px}
+  .search svg{opacity:.7;flex:0 0 auto}
+  .search input{background:none;border:none;outline:none;color:#eef1f7;font-size:12.5px;width:100%}
+  .search input::placeholder{color:#aeb6cc}
+  .search.hide{display:none}
+  .refresh{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.22);
+           border-radius:8px;height:34px;padding:0 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .refresh:hover{background:rgba(255,255,255,.22)}
+  .yearsel{background:rgba(0,0,0,.26);color:#eef1f7;border:1px solid rgba(255,255,255,.16);
+           border-radius:8px;height:34px;padding:0 8px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .yearsel:focus{outline:none}
+  .yearsel option{color:#111}
+
+  .alertbar{display:none;padding:10px 20px;background:#3a1416;border-bottom:1px solid var(--red);color:#ffd7d8;font-size:13px}
+  .alertbar.show{display:block}.alertbar b{color:#ff9d9f}.alertbar .a{display:block;padding:2px 0}
+  .feedstrip{display:none;align-items:center;gap:18px;padding:6px 20px;background:var(--panel);border-bottom:1px solid var(--line);
+             font-size:12px;color:var(--dim);overflow:hidden;white-space:nowrap}
+  .feedstrip.show{display:flex}
+  .feedstrip .fs{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto}
+  .feedstrip .fs b{color:var(--ink);font-weight:650}
+  .feedstrip .ok{color:#5ed17a}.feedstrip .err{color:#ff7b7f}
+
+  .wrap{padding:14px 20px 60px;max-width:1200px;margin:0 auto}
+  .genline{display:none}
+  #index{display:none}
+  .stat .n{transition:color .4s ease}
+
+  /* ---------- INDEX: labelled colour key, right above the boxes ---------- */
+  .index{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-bottom:13px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .ix{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);white-space:nowrap}
+  .ix i{width:12px;height:12px;border-radius:3px;flex:0 0 auto}.ix b{color:var(--ink);font-weight:750}
+  .ix .cg{background:var(--green)}.ix .cp{background:var(--purple)}.ix .cy{background:var(--yellow)}
+  .ix .cr{background:var(--red)}.ix .co{background:var(--orange)}.ix .cb{background:var(--blue)}
+  .ix.brk i{position:relative;background:var(--blue)}
+  .ix.brk i::after{content:'';position:absolute;inset:1px;background:linear-gradient(45deg,#0000 40%,#fff 40% 60%,#0000 60%),linear-gradient(-45deg,#0000 40%,#fff 40% 60%,#0000 60%)}
+
+  /* summary stat row (kept, compact) */
+  .summary{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 14px;min-width:84px}
+  .stat .n{font-size:20px;font-weight:680}.stat .l{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
+
+  .bldg{margin-bottom:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .bldghdr{margin:0;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:var(--ink);text-shadow:0 1px 2px rgba(0,0,0,.25);user-select:none}
+  .bldghdr .rpct{font-size:12px;font-weight:600;opacity:.9}
+  .bldgbody{padding:12px 16px 4px}
+  .room{margin-bottom:16px}
+  .roomsub{font-size:12px;color:var(--dim);margin:0 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .tiles{display:flex;flex-wrap:wrap;gap:6px}
+  .tile{width:38px;height:38px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+        font-size:11px;cursor:pointer;color:#0b0e12;font-weight:650;position:relative;
+        /* item 21: colour changes fade like a slow light switch (diff-render keeps the node alive) */
+        transition:background-color 4s ease, color 4s ease, opacity .4s ease}
+  /* item 21: a NEW box slides out from underneath its left neighbour */
+  @keyframes tileSpawn{0%{transform:translateX(-44px) scale(.55);opacity:0}55%{transform:translateX(-10px) scale(.9);opacity:.7}100%{transform:translateX(0) scale(1);opacity:1}}
+  .tile.spawn{animation:tileSpawn .7s cubic-bezier(.22,.9,.35,1.1) both}
+  /* item 21: rooms + buildings ease in when they first appear */
+  @keyframes blockAppear{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .room.appear,.bldg.appear{animation:blockAppear .8s ease both}
+  .tile.green{background:var(--green)}.tile.yellow{background:var(--yellow)}.tile.purple{background:var(--purple);color:#fff}
+  .tile.red{background:var(--red);color:#fff}.tile.orange{background:var(--orange);color:#fff}
+  .tile.blue{background:#3b6fb0;color:#fff}.tile.broken{background:#3b6fb0;color:#fff}
+  .tile.broken::after{content:'';position:absolute;inset:5px;background:linear-gradient(45deg,#0000 43%,#fff 43% 57%,#0000 57%),linear-gradient(-45deg,#0000 43%,#fff 43% 57%,#0000 57%)}
+  .tile.untouched{opacity:.85}
+  .tile:hover{outline:2px solid var(--accent);outline-offset:1px}
+  .tile.dim{opacity:.12}
+  .tile .badge{position:absolute;top:-6px;right:-6px;background:#111;color:#fff;border:1px solid var(--line);border-radius:9px;font-size:10px;padding:0 4px;line-height:15px;min-width:15px;text-align:center}
+  /* per-PC note indicator: solid dot, top-left. A DISTINCT bright azure, deliberately
+     different from the missing/broken steel-blue (--blue #3b6fb0) so it never reads as a mark. */
+  .tile .notedot{position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;background:#38bdf8;border:1px solid var(--bg);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+  .empty{color:var(--dim);padding:44px 0;text-align:center}
+  .placeholder{color:var(--dim);text-align:center;padding:60px 0;border:1px dashed var(--line);border-radius:12px}
+  .placeholder h3{color:var(--ink);margin:0 0 6px;font-size:16px}
+
+  #panel{position:fixed;top:0;right:0;height:100%;width:min(420px,92vw);background:var(--panel);border-left:1px solid var(--line);
+         transform:translateX(100%);transition:transform .18s ease;overflow:auto;padding:18px}
+  #panel.open{transform:translateX(0);box-shadow:-16px 0 40px rgba(0,0,0,.4)}
+  #panel h3{margin:0 0 2px;font-size:16px}#panel .close{position:absolute;top:14px;right:14px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer}
+  .app{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .pill{font-size:11px;padding:1px 8px;border-radius:20px;font-weight:600}
+  .pill.installed{background:rgba(46,160,67,.18);color:#5ed17a}.pill.missing{background:rgba(212,160,23,.18);color:#e5bd54}
+  .pill.error{background:rgba(229,72,77,.2);color:#ff7b7f}.pill.opened,.pill.removed,.pill.snapshot{background:var(--panel2);color:var(--dim)}
+  .muted{color:var(--dim);font-size:12px}
+  /* machine panel: readable state + key/value rows instead of one dot-chained line */
+  .mstate{font-size:13px;font-weight:650;margin:10px 0 8px}
+  .mstate.st-green{color:#5ed17a}.mstate.st-purple{color:#b899f2}.mstate.st-yellow{color:#e5bd54}
+  .mstate.st-blue,.mstate.st-broken{color:#8fb6e6}
+  .kv{display:flex;gap:10px;font-size:12.5px;padding:3px 0}
+  .kv span{color:var(--dim);width:74px;flex:0 0 auto}
+  .kv b{font-weight:600;color:var(--ink)}
+  /* tech-mark buttons (panel + bulk bar) */
+  .marklabel{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
+  .markrow{display:flex;flex-wrap:wrap;gap:6px}
+  .mbtn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer}
+  .mbtn:hover{filter:brightness(1.15)}
+  .m-broken{border-color:#3b6fb0;color:#8fb6e6}.m-missing{border-color:#3b6fb0;color:#8fb6e6}
+  .m-verified{border-color:var(--green);color:#5ed17a}.m-override{border-color:var(--green);color:#5ed17a}
+  .m-clear{border-color:var(--line);color:var(--dim)}
+  /* multi-select */
+  .selbar{display:none;align-items:center;gap:14px;padding:8px 20px;background:#12233a;border-bottom:1px solid var(--accent);font-size:13px;flex-wrap:wrap}
+  .selbar.show{display:flex}.selbar #selcount{font-weight:700}.selbar .selactions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--dim)}
+  body.selmode .tile{cursor:copy}
+  .tile.sel{outline:3px solid var(--accent);outline-offset:1px;box-shadow:0 0 0 2px var(--bg)}
+  .appclick{cursor:pointer}.appclick:hover{background:var(--panel2)}
+  .ncflag{color:#e5bd54;font-size:10.5px;font-weight:650}
+  .appdet{font-size:11.5px;color:var(--dim);padding:3px 2px 9px;border-bottom:1px solid var(--line)}
+  .marknote{font-size:12px;color:#e5bd54;margin:2px 0 8px}
+  .notebox{width:100%;box-sizing:border-box;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;font-size:12.5px;resize:vertical;margin:2px 0 8px}
+  .pcnote{font-size:12px;color:#cdd6e0;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 9px;margin:2px 0 8px;white-space:pre-wrap}
+  /* leaderboard tables + live feed (items 7 + 10) */
+  .ltables{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .ltable{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto}
+  .ltable h3{margin:0 0 10px;font-size:14px}
+  .ltable table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .ltable th{text-align:left;color:var(--dim);font-weight:600;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .ltable td{padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .ltable td.n{text-align:right;font-weight:700}
+  .ltable tr:last-child td{border-bottom:none}
+  .feed{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .feed .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:13px}
+  .feed .row:last-child{border-bottom:none}
+  .feed .m{font-weight:650;min-width:150px}
+  .feed .t{margin-left:auto;color:var(--dim);font-size:11px;white-space:nowrap}
+  /* stats tab (item 8) */
+  .statsctl{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .statsctl select,.statsctl input{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;height:32px;padding:0 10px;font-size:12.5px}
+  .stchart{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
+  .chart{width:100%;height:auto;display:block}
+  .chart .grid{stroke:var(--line);stroke-width:1}
+  .chart .area{fill:rgba(76,139,245,.14);stroke:none}
+  .chart .line{fill:none;stroke:#4c8bf5;stroke-width:2}
+  .chart .dot{fill:#4c8bf5}
+  .chart .yl{fill:var(--dim);font-size:10px;text-anchor:end}
+  .chart .xl{fill:var(--dim);font-size:10px;text-anchor:middle}
+  .chart .target{stroke:#e5484d;stroke-width:1.5;stroke-dasharray:5 4}
+  .chart .tl{fill:#e5484d;font-size:10px;text-anchor:end}
+  /* Time Machine + Software Auditor (items 20 + 18) */
+  .tmctl{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .tmctl #tmSlider{flex:1}
+  .wipbanner{background:#3a2a10;border:1px solid #d9730d;color:#ffd8a8;padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600}
+  .auditform .arow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .auditform .arow label{width:110px;color:var(--dim);font-size:12.5px}
+  .auditform .arow input{flex:1;max-width:320px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;height:32px;padding:0 10px;font-size:12.5px}
+  .auditform .awarn{color:#e5bd54;font-size:12px;margin:8px 0 12px}
+  .atable{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px;display:block;overflow-x:auto}
+  .atable th{text-align:left;color:var(--dim);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .atable td{padding:4px 6px;border-bottom:1px solid var(--line)}
+  .atable input{width:100%;min-width:90px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;height:28px;padding:0 8px;font-size:12px}
+  .atable input[type=checkbox]{min-width:0;width:auto;height:auto}
+  .atable td.prevnotes{font-size:11px;color:var(--dim);max-width:220px;white-space:normal}
+  .arowbtns{display:flex;gap:8px}
+  /* Print Station + Data Tools (items 12-15) */
+  .prbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .prbox>b{display:block;margin-bottom:4px}
+  .prlist{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;max-height:180px;overflow-y:auto}
+  .prm{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink);white-space:nowrap;cursor:pointer;margin-top:6px}
+  .dtdel{border-color:#e5484d;color:#ff9d9f}
+  /* Timing tab + per-day throughput combo chart (2026-08-20) */
+  .chart .bar{fill:rgba(76,139,245,.55)}
+  .chart .band{stroke:#8a93a2;stroke-width:2.5;opacity:.7;stroke-linecap:round}
+  .chart .med{stroke:var(--ink);stroke-width:2}
+  .chart .mean{fill:#d4a017}
+  .chart .yr{fill:var(--dim);font-size:10px;text-anchor:start}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--dim);margin-bottom:8px;flex-wrap:wrap;align-items:center}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .throw{cursor:pointer}
+  .throw:hover td{background:var(--panel2)}
+  .thdet td{background:var(--panel2);font-size:12px;white-space:normal;line-height:1.9}
+  .gapx{color:var(--dim);text-decoration:line-through}
+  /* ---------- WALL MODE (Blake 2026-08-20): TV/projector view. Every machine on one
+     screen, zero scrolling - tiles autoscale to the biggest size that still fits.
+     IBM Plex Sans (chosen over Inter/Space Grotesk/Barlow/Bebas in the mockup round). */
+  #wall{position:fixed;inset:0;background:#0b0d11;z-index:50;display:none;flex-direction:column;
+        padding:1.2vh 1.2vw;font-family:'IBM Plex Sans',system-ui,sans-serif;--wts:24px}
+  #wall.on{display:flex}
+  #wall .whd{display:flex;align-items:center;gap:1.6vw;margin-bottom:1.2vh;flex:0 0 auto}
+  #wall .whd h1{font-size:2.6vh;margin:0;letter-spacing:.4px;white-space:nowrap}
+  #wall .wsub{color:#8a93a2;font-size:1.5vh}
+  /* legend: its own full-width row, big plain text, evenly spread - no pills */
+  #wall .wtot{margin-left:auto;font-size:2.2vh;color:#8a93a2;padding-right:1.2vw}
+  #wall .wtot b{color:#e7ecf2;font-size:2.6vh}
+  /* --wlf: legend font scale, autofitted by fitWallLegend() so it is ALWAYS one line */
+  #wall .wlg{display:flex;justify-content:space-between;align-items:center;gap:1vw;flex-wrap:nowrap;overflow:hidden;
+             flex:0 0 auto;margin-bottom:1.2vh;padding:0 .2vw;font-size:calc(2.1vh*var(--wlf,1));color:#c7cfe8}
+  #wall .wlgi{display:inline-flex;align-items:center;gap:.8vh;white-space:nowrap;flex:0 0 auto}
+  #wall .wlgi i{width:calc(1.9vh*var(--wlf,1));height:calc(1.9vh*var(--wlf,1));border-radius:.5vh;flex:0 0 auto}
+  #wall .wlgi b{color:#fff;font-size:calc(2.4vh*var(--wlf,1))}
+  #wall .wx{background:#1b2029;color:#c7cfe8;border:1px solid #262c37;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:12px;flex:0 0 auto}
+  #wallGrid{flex:1;display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:min-content;gap:1vh;align-content:start;overflow:hidden}
+  #wall .wc{background:#12151c;border:1px solid #232936;border-radius:1vh;padding:1vh 1.1vh}
+  #wall .wch{display:flex;align-items:center;justify-content:space-between;font-size:1.7vh;font-weight:700;margin-bottom:.8vh;gap:1vw}
+  #wall .wch .wcd{color:#8a93a2;font-weight:600;flex:0 0 auto}
+  #wall .wch>span:first-child{flex:0 0 auto}
+  #wall .wbar{flex:1;display:flex;height:1.1vh;border-radius:99px;overflow:hidden;background:#1c212c;min-width:3vw}
+  #wall .wbar i{display:block;min-width:0;flex:0 1 0;transition:flex-grow .9s cubic-bezier(.3,.8,.3,1)}
+  #wall .wt{cursor:pointer}
+  #wall .wt:hover{outline:2px solid var(--accent);outline-offset:1px}
+  #wallPop{display:none;position:fixed;z-index:70;width:min(380px,90vw);max-height:72vh;overflow:auto;
+           background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;
+           box-shadow:0 18px 50px rgba(0,0,0,.55);font:13px/1.45 'IBM Plex Sans',system-ui,sans-serif}
+  #wallPop .wpx{position:absolute;top:10px;right:10px;background:var(--panel2);color:var(--ink);
+                border:1px solid var(--line);border-radius:7px;padding:4px 9px;cursor:pointer}
+  #wall .wc{cursor:pointer}
+  #wall .wc:hover{border-color:#3a4a72}
+  #wallPop .wrp{padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  #wallPop .wrp:last-child{border-bottom:none}
+  #wall .wtot b.bump{display:inline-block;animation:wtbump .8s ease}
+  @keyframes wtbump{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
+  #wall .wtl{display:flex;flex-wrap:wrap;gap:calc(var(--wts)*.18)}
+  #wall .wt{width:var(--wts);height:var(--wts);border-radius:calc(var(--wts)*.2);font-size:calc(var(--wts)*.42);
+            font-weight:700;color:#0b0e12;display:flex;align-items:center;justify-content:center;font-style:normal}
+  #wall .wt.green{background:var(--green)}#wall .wt.yellow{background:var(--yellow)}
+  #wall .wt.purple{background:var(--purple);color:#fff}#wall .wt.red{background:var(--red);color:#fff}
+  #wall .wt.orange{background:var(--orange);color:#fff}#wall .wt.blue,#wall .wt.broken{background:#3b6fb0;color:#fff}
+  #wall .wt.untouched{opacity:.85}
+  /* broken machines wear the same X as the main fleet grid, scaled to the tile */
+  #wall .wt{position:relative}
+  #wall .wt.broken::after{content:'';position:absolute;inset:calc(var(--wts)*.14);
+    background:linear-gradient(45deg,#0000 43%,#fff 43% 57%,#0000 57%),linear-gradient(-45deg,#0000 43%,#fff 43% 57%,#0000 57%)}
+  .ltable th.sortable{cursor:pointer;user-select:none}
+  .ltable th.sortable:hover{color:var(--ink)}
+  .ltable .sarr{color:var(--accent);font-size:9px}
+  /* light-mode auto-switch REMOVED (Blake 2026-08-20): school laptops run Windows
+     light theme and the site flipped white on them. One dark look everywhere. */
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="mark">Installer<span>Master</span></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="barright">
+    <div class="search" id="searchWrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" placeholder="Search Tab 1…" autocomplete="off">
+    </div>
+    <select id="year" class="yearsel" title="Year" style="display:none"></select>
+    <button class="refresh" id="selBtn" onclick="toggleSelMode()" title="Select machines to mark in bulk">Select</button>
+    <button class="refresh" id="refresh">↻ Refresh</button>
+    <button class="refresh" id="wallBtn" onclick="openWall()" title="TV wall view — every machine, one screen, no scrolling">⛶ Wall</button>
+  </div>
+</div>
+<div id="alertbar" class="alertbar"></div>
+<!-- multi-select mark bar: shows while Select mode is on -->
+<div id="selbar" class="selbar"><span id="selcount">0 selected</span><span class="selactions">Mark all as:
+  <button class="mbtn m-broken" onclick="bulkMark('broken')">Broken</button>
+  <button class="mbtn m-missing" onclick="bulkMark('missing')">Reported missing</button>
+  <button class="mbtn m-verified" onclick="bulkMark('verified')">Verified</button>
+  <button class="mbtn m-override" onclick="bulkMark('override')">Override good</button>
+  <button class="mbtn m-clear" onclick="bulkMark('clear')">Clear</button>
+</span></div>
+<!-- item 10 (variant B): live-feed strip on every page. Blake picks strip vs tab later. -->
+<div id="feedstrip" class="feedstrip"></div>
+<div class="wrap">
+  <div class="genline" id="gen">loading…</div>
+  <div class="index" id="index"></div>
+  <div class="summary" id="summary"></div>
+  <div id="rooms"></div>
+  <div id="placeholder" class="placeholder" style="display:none"></div>
+</div>
+<div id="panel"><button class="close" onclick="closePanel()">✕</button><div id="panelBody"></div></div>
+<div id="wall" onclick="if(!event.target.closest('#wallPop')&&!event.target.closest('.wt')&&!event.target.closest('.wc'))closeWallPop()"><div class="whd"><h1>Progress Wall</h1><span class="wtot" id="wallTot"></span><button class="wx" onclick="closeWall()">✕ Exit</button></div><div class="wlg" id="wallLg"></div><div id="wallGrid"></div><div id="wallPop"><button class="wpx" onclick="closeWallPop()">✕</button><div class="wpb"></div></div></div>
+
+<script>
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// "2026-08-14T10:34:26.678" -> "August 14th, 2026 at 10:34 AM". Pure string maths —
+// the ts is the stick's local wall clock with no zone, so Date would mis-shift it.
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function fmtWhen(ts){
+  const m=/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(String(ts||''));
+  if(!m) return String(ts||'');
+  const d=+m[3], v=d%100;
+  const suf=(v>=11&&v<=13)?'th':(d%10===1?'st':d%10===2?'nd':d%10===3?'rd':'th');
+  let h=+m[4]; const ap=h>=12?'PM':'AM'; h=h%12||12;
+  return MONTHS[+m[2]-1]+' '+d+suf+', '+m[1]+' at '+h+':'+m[5]+' '+ap;
+}
+// date-only variant: "2026-08-17" -> "August 17th, 2026" (imaged_gen has no time part)
+function fmtDay(s){
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||''));
+  if(!m) return String(s||'');
+  const d=+m[3], v=d%100;
+  const suf=(v>=11&&v<=13)?'th':(d%10===1?'st':d%10===2?'nd':d%10===3?'rd':'th');
+  return MONTHS[+m[2]-1]+' '+d+suf+', '+m[1];
+}
+let DATA = null, activeTab = 1, searchQ = '', selectedYear = null;
+// ---- tabs: Tab 1 = fleet; Errors + Live Feed are real; the rest are placeholders ----
+const TABS = [
+  { name:'Fleet',     kind:'fleet',       search:true  },
+  { name:'Errors',    kind:'errors',      search:false },
+  { name:'Live Feed', kind:'feed',        search:false },
+  { name:'Stats',     kind:'stats',       search:false },
+  { name:'Burndown',  kind:'burndown',    search:false },
+  // Timing tab HIDDEN for now (Blake, 2026-08-20) — everything still works, put
+  // this line back to re-enable: { name:'Timing', kind:'timing', search:false },
+  { name:'Image',     kind:'image',       search:false },
+  { name:'Print Station', kind:'print',   search:false },
+  { name:'Auditor',   kind:'auditor',     search:false },
+  { name:'Time Machine', kind:'timemachine', search:false },
+  { name:'Data Tools', kind:'datatools',  search:false },
+];
+const TAB_COUNT = TABS.length;
+function buildTabs(){
+  const t = document.getElementById('tabs'); let h='';
+  for (let n=1; n<=TAB_COUNT; n++) h += '<button class="tab'+(n===activeTab?' on':'')+'" onclick="selectTab('+n+')">'+esc(TABS[n-1].name)+'</button>';
+  t.innerHTML = h;
+}
+let tabGen=0;
+function selectTab(n){
+  activeTab = n; tabGen++; buildTabs();
+  const tab = TABS[n-1];
+  const sw = document.getElementById('searchWrap');
+  if (tab.search) { sw.classList.remove('hide'); document.getElementById('search').placeholder='Search '+tab.name+'…'; }
+  else sw.classList.add('hide');
+  const fleet = (tab.kind==='fleet');
+  for (const id of ['summary','rooms']) document.getElementById(id).style.display = fleet ? '' : 'none';
+  const ph = document.getElementById('placeholder');
+  if (fleet) { ph.style.display='none'; if (DATA) render(DATA); }
+  else { ph.style.display=''; ph.innerHTML='<div class="muted">Loading '+esc(tab.name)+'…</div>'; loadTab(tab.kind); }
+}
+// each async tab loader captures the generation at entry and bails if the user has
+// since switched tabs — otherwise a slow response paints over the wrong tab.
+function tabStale(g){ return g!==tabGen; }
+// write to the shared #placeholder only if the user hasn't switched tabs since the
+// loader started (g captured at entry). Prevents a slow tab painting over a newer one.
+function tabWrite(g, html){ if(tabStale(g)) return false; document.getElementById('placeholder').innerHTML=html; return true; }
+async function loadTab(kind){
+  const g=tabGen;
+  if (kind==='errors') return loadErrors(g);
+  if (kind==='feed') return loadFeed(g);
+  if (kind==='stats') return loadStats(g);
+  if (kind==='burndown') return loadBurndown(g);
+  if (kind==='timing') return loadTiming(g);
+  if (kind==='image') return loadImage(g);
+  if (kind==='auditor') return loadAuditor(g);
+  if (kind==='timemachine') return loadTimeMachine(g);
+  if (kind==='print') return loadPrint(g);
+  if (kind==='datatools') return loadDataTools(g);
+  document.getElementById('placeholder').innerHTML='<h3>'+esc(TABS[activeTab-1].name)+'</h3><div class="muted">Not built yet — placeholder.</div>';
+}
+// Image board: fleet layout, but tiles just show imaged (green) vs not-imaged (red).
+async function loadImage(g){
+  const ph=document.getElementById('placeholder');
+  ph.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    const d=await (await fetch('/api/image',{headers:{'Accept':'application/json'}})).json();
+    if(tabStale(g)) return;
+    if(!d.ok) throw new Error(d.error||'error');
+    const s=d.summary||{imaged:0,unknown:0,stale:0};
+    const idx='<div class="summary" style="margin-bottom:14px">'+
+      '<div class="stat"><div class="n" style="color:var(--green)">'+(s.imaged||0)+'</div><div class="l">imaged (this year)</div></div>'+
+      '<div class="stat"><div class="n" style="color:var(--yellow)">'+(s.unknown||0)+'</div><div class="l">unknown · no stick yet</div></div>'+
+      '<div class="stat"><div class="n" style="color:var(--red)">'+(s.stale||0)+'</div><div class="l">not imaged this year</div></div>'+
+      '</div>';
+    ph.innerHTML=idx+fleetGridHtml(d.rooms,'',true,null,'im');   // clickable + toggle, ids namespaced 'im'
+  }catch(e){ ph.innerHTML='<div class="empty">Could not load the image board.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+let statsMetric='installs', statsRoom='', statsApp='', statsFrom='', statsTo='', statsDatesAuto=false;
+async function loadStats(g){
+  const ph=document.getElementById('placeholder');
+  if(!statsTo){ statsTo=new Date().toISOString().slice(0,10); statsFrom=new Date(Date.now()-30*86400000).toISOString().slice(0,10); }
+  if(typeof g==='number'&&tabStale(g)) return;
+  ph.innerHTML='<div class="statsctl">'+
+    '<select id="stMetric"><option value="installs">Installs</option><option value="finished">Machines finished</option><option value="throughput">Per-day throughput</option><option value="errors">Errors</option><option value="active">Active machines</option><option value="card">Specific card…</option><option value="avgdone">Avg days 0→done</option></select>'+
+    '<select id="stApp" style="display:none"></select>'+
+    '<input type="date" id="stFrom"> <span class="muted">to</span> <input type="date" id="stTo">'+
+    '<select id="stRoom"><option value="">All rooms</option></select>'+
+    '<label class="prm" id="stGapWrap" style="display:none"><input type="checkbox" id="stGapIgn"> Ignore gaps &gt; <input type="number" id="stGapHrs" min="0.5" step="0.5" style="width:62px"> h</label>'+
+    '</div><div id="stChart" class="stchart"></div>';
+  const el=(id)=>document.getElementById(id);
+  el('stMetric').value=statsMetric; el('stFrom').value=statsFrom; el('stTo').value=statsTo;
+  // room selection with ALL - per-room ("10101") and per-building ("55 - whole building")
+  // entries both come from the loaded fleet; the value is a machine-name prefix.
+  try{
+    if(!DATA) await load();
+    const rooms=(DATA?DATA.rooms:[]).map(r=>r.room);
+    const bldgs=[...new Set(rooms.map(r=>(/^(\d+)/.exec(r)||[])[1]).filter(Boolean))].filter(b=>rooms.some(r=>r!==b&&r.startsWith(b)));
+    el('stRoom').innerHTML='<option value="">All rooms</option>'+
+      bldgs.map(b=>'<option value="'+esc(b)+'">'+esc(b)+' — whole building</option>').join('')+
+      rooms.map(r=>'<option value="'+esc(r)+'">'+esc(r)+'</option>').join('');
+  }catch(e){}
+  el('stRoom').value=statsRoom;
+  el('stMetric').onchange=async e=>{ statsMetric=e.target.value; if(statsMetric==='throughput') statsDatesAuto=true; stThrCtl(); await stFillApps(); drawStats(); };
+  el('stApp').onchange=e=>{ statsApp=e.target.value; drawStats(); };
+  el('stFrom').onchange=e=>{ statsFrom=e.target.value; statsDatesAuto=false; drawStats(); };
+  el('stTo').onchange=e=>{ statsTo=e.target.value; statsDatesAuto=false; drawStats(); };
+  el('stRoom').onchange=e=>{ statsRoom=e.target.value; statsDatesAuto=true; drawStats(); };
+  el('stGapIgn').checked=thrIgnGaps; el('stGapHrs').value=thrGapHrs;
+  el('stGapIgn').onchange=e=>{ thrIgnGaps=e.target.checked; drawStats(); };
+  el('stGapHrs').onchange=e=>{ thrGapHrs=Math.max(0.5,+e.target.value||3); e.target.value=thrGapHrs; drawStats(); };
+  stThrCtl();
+  await stFillApps();
+  drawStats();
+}
+async function stFillApps(){
+  // the card sub-select lives OUTSIDE the main metric list on purpose - Blake doesn't
+  // want the y-axis dropdown flooded with every card name.
+  const sel=document.getElementById('stApp'); if(!sel) return;
+  if(statsMetric!=='card'){ sel.style.display='none'; return; }
+  if(!sel.options.length){
+    try{
+      const d=await (await fetch('/api/stats?list=apps',{headers:{'Accept':'application/json'}})).json();
+      if(d.ok) sel.innerHTML=(d.apps||[]).map(a=>'<option value="'+esc(a)+'">'+esc(a)+'</option>').join('');
+    }catch(e){}
+  }
+  if(!statsApp && sel.options.length) statsApp=sel.options[0].value;
+  sel.value=statsApp; sel.style.display='';
+}
+function stThrCtl(){ const w=document.getElementById('stGapWrap'); if(w) w.style.display=(statsMetric==='throughput')?'':'none'; }
+async function drawStats(){
+  const c=document.getElementById('stChart'); if(!c) return;
+  if(statsMetric==='throughput') return drawThroughputStats(c);
+  c.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    let q='/api/stats?metric='+encodeURIComponent(statsMetric)+(statsRoom?'&room='+encodeURIComponent(statsRoom):'')+
+          (statsFrom?'&from='+statsFrom:'')+(statsTo?'&to='+statsTo:'');
+    if(statsMetric==='card') q+='&app='+encodeURIComponent(statsApp);
+    const d=await (await fetch(q,{headers:{'Accept':'application/json'}})).json();
+    if(!d.ok) throw new Error(d.error||'error');
+    const label=statsMetric==='card'?(statsApp+' installs'):statsMetric==='finished'?'machines completely finished':statsMetric==='avgdone'?'avg days from first touch to done':statsMetric;
+    c.innerHTML=svgChart(d.series||[], label);
+  }catch(e){ c.innerHTML='<div class="empty">Could not load stats.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+function svgChart(series, metric, target){
+  if(!series.length) return '<div class="muted">No data in this range.</div>';
+  const W=920,H=260,padL=42,padB=28,padT=14,padR=14, iw=W-padL-padR, ih=H-padT-padB;
+  const dataMax=Math.max(1,...series.map(s=>s.n)), max=Math.max(dataMax, target||0), n=series.length;
+  const x=i=> padL + (n===1?iw/2:(i/(n-1))*iw);
+  const y=v=> padT + ih - (v/max)*ih;
+  const tline=(target&&target>0)?'<line x1="'+padL+'" y1="'+y(target)+'" x2="'+(W-padR)+'" y2="'+y(target)+'" class="target"/><text x="'+(W-padR)+'" y="'+(y(target)-4)+'" class="tl">target '+target+'</text>':'';
+  const pts=series.map((s,i)=>x(i)+','+y(s.n)).join(' ');
+  const area='M'+x(0)+','+(padT+ih)+' L'+series.map((s,i)=>x(i)+','+y(s.n)).join(' L')+' L'+x(n-1)+','+(padT+ih)+' Z';
+  const gy=[0,Math.round(max/2),max].filter((v,i,a)=>a.indexOf(v)===i);
+  const grid=gy.map(v=>'<line x1="'+padL+'" y1="'+y(v)+'" x2="'+(W-padR)+'" y2="'+y(v)+'" class="grid"/><text x="'+(padL-6)+'" y="'+(y(v)+3)+'" class="yl">'+v+'</text>').join('');
+  const idxs=[0,Math.floor(n/2),n-1].filter((v,i,a)=>a.indexOf(v)===i);
+  const xl=idxs.map(i=>'<text x="'+x(i)+'" y="'+(H-8)+'" class="xl">'+esc((series[i].day||'').slice(5))+'</text>').join('');
+  const dots=series.map((s,i)=>'<circle cx="'+x(i)+'" cy="'+y(s.n)+'" r="2.5" class="dot"><title>'+esc(s.day)+': '+s.n+'</title></circle>').join('');
+  const total=series.reduce((a,s)=>a+s.n,0);
+  return '<div class="muted" style="margin-bottom:8px">'+esc(metric)+' · '+total+' total over '+n+' day'+(n>1?'s':'')+'</div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" class="chart" preserveAspectRatio="xMidYMid meet">'+
+    grid+'<path d="'+area+'" class="area"/><polyline points="'+pts+'" class="line"/>'+dots+tline+xl+'</svg>';
+}
+// ---- Timing / per-day throughput (Blake, 2026-08-20) ----------------------
+// One fetch ships every COMPLETED machine (start, finish, gaps >= 30 min, app
+// timeline, sticks). Everything else — room filter, date range, the "ignore
+// gaps > X h" checkbox, sorting — is client-side and instant.
+let thrData=null, thrIgnGaps=true, thrGapHrs=3, thrSort='slow', thrRoom='', thrFrom='', thrTo='', thrDatesAuto=true;
+// column-header sort: click asc -> click desc -> click neutral (dropdown order)
+let thrCol='', thrColDir=0;
+function thrHdr(col){
+  if(thrCol!==col){ thrCol=col; thrColDir=1; }
+  else if(thrColDir===1) thrColDir=2;
+  else { thrCol=''; thrColDir=0; }
+  thrDrawTable();
+}
+function thrColKey(x){
+  const m=x.m, g=(m.gaps&&m.gaps[0])||null;
+  switch(thrCol){
+    case 'machine': return m.machine;
+    case 'room':    return m.rk;
+    case 'start':   return m.start;
+    case 'finish':  return m.finish;
+    case 'dur':     return x.adj;
+    case 'gap':     return g?g.secs:0;
+    case 'stick':   return (m.sticks||[]).join(',');
+    default:        return 0;
+  }
+}
+async function thrFetch(force){
+  if(thrData&&!force) return thrData;
+  const d=await (await fetch('/api/throughput',{headers:{'Accept':'application/json'}})).json();
+  if(!d.ok) throw new Error(d.error||'error');
+  thrData=d; return d;
+}
+function thrAdj(m){
+  // "active" duration: total minus every gap larger than the threshold (lunch,
+  // overnight). With the checkbox off it's plain wall-clock finish - start.
+  if(!thrIgnGaps) return m.secs;
+  const th=Math.max(.5,+thrGapHrs||3)*3600; let cut=0;
+  for(const g of (m.gaps||[])) if(g.secs>th) cut+=g.secs;
+  return Math.max(0,m.secs-cut);
+}
+function thrSel(room,from,to){
+  return (thrData&&thrData.machines||[]).filter(m=>
+    (!room||m.machine.startsWith(room)) &&
+    (!from||m.finish.slice(0,10)>=from) && (!to||m.finish.slice(0,10)<=to));
+}
+function thrEarliest(room){
+  let e='';
+  for(const m of (thrData&&thrData.machines||[])) if(!room||m.machine.startsWith(room)) if(!e||m.start<e) e=m.start;
+  return e?e.slice(0,10):'';
+}
+function fmtDur(secs){
+  secs=Math.round(secs); if(secs<60) return secs+'s';
+  const h=Math.floor(secs/3600), mn=Math.round((secs-h*3600)/60);
+  return h?(h+'h '+String(mn).padStart(2,'0')+'m'):(mn+'m');
+}
+function thrRoomOptions(){
+  const rooms=(DATA?DATA.rooms:[]).map(r=>r.room);
+  const bldgs=[...new Set(rooms.map(r=>(/^(\d+)/.exec(r)||[])[1]).filter(Boolean))].filter(b=>rooms.some(r=>r!==b&&r.startsWith(b)));
+  return '<option value="">All rooms</option>'+
+    bldgs.map(b=>'<option value="'+esc(b)+'">'+esc(b)+' — whole building</option>').join('')+
+    rooms.map(r=>'<option value="'+esc(r)+'">'+esc(r)+'</option>').join('');
+}
+function thrDayStats(ms){
+  const by={};
+  for(const m of ms){ const d=m.finish.slice(0,10); (by[d]=by[d]||[]).push(thrAdj(m)); }
+  return Object.keys(by).sort().map(d=>{
+    const a=by[d].slice().sort((x,y)=>x-y), n=a.length;
+    const med=n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2;
+    return {day:d,n,min:a[0],max:a[n-1],med,mean:a.reduce((s,x)=>s+x,0)/n};
+  });
+}
+// combo chart: bars = machines completed/day (left axis) · duration overlay =
+// low→peak band + median tick + mean dot (right axis). Hover a day for all five.
+function svgComboChart(days){
+  if(!days.length) return '<div class="muted">No completed machines in this range.</div>';
+  const W=920,H=300,padL=42,padB=30,padT=16,padR=56, iw=W-padL-padR, ih=H-padT-padB;
+  const n=days.length, cmax=Math.max(1,...days.map(d=>d.n)), dmax=Math.max(60,...days.map(d=>d.max));
+  const cx=i=> padL + ((i+0.5)/n)*iw;
+  const bw=Math.min(46,(iw/n)*0.55);
+  const yC=v=> padT+ih-(v/cmax)*ih;
+  const yD=v=> padT+ih-(v/dmax)*ih;
+  let out='';
+  const gy=[0,Math.round(cmax/2),cmax].filter((v,i,a)=>a.indexOf(v)===i);
+  out+=gy.map(v=>'<line x1="'+padL+'" y1="'+yC(v)+'" x2="'+(W-padR)+'" y2="'+yC(v)+'" class="grid"/><text x="'+(padL-6)+'" y="'+(yC(v)+3)+'" class="yl">'+v+'</text>').join('');
+  const dy=[0,dmax/2,dmax];
+  out+=dy.map(v=>'<text x="'+(W-padR+6)+'" y="'+(yD(v)+3)+'" class="yr">'+fmtDur(v)+'</text>').join('');
+  for(let i=0;i<n;i++){
+    const d=days[i], x=cx(i);
+    const tip='<title>'+esc(d.day)+' — '+d.n+' machine'+(d.n>1?'s':'')+
+      '\nmedian '+fmtDur(d.med)+' · mean '+fmtDur(d.mean)+'\npeak '+fmtDur(d.max)+' · lowest '+fmtDur(d.min)+'</title>';
+    out+='<g>'+tip+
+      '<rect x="'+(x-bw/2)+'" y="'+yC(d.n)+'" width="'+bw+'" height="'+(padT+ih-yC(d.n))+'" rx="3" class="bar"/>'+
+      '<line x1="'+x+'" y1="'+yD(d.min)+'" x2="'+x+'" y2="'+yD(d.max)+'" class="band"/>'+
+      '<line x1="'+(x-7)+'" y1="'+yD(d.med)+'" x2="'+(x+7)+'" y2="'+yD(d.med)+'" class="med"/>'+
+      '<circle cx="'+x+'" cy="'+yD(d.mean)+'" r="3.4" class="mean"/></g>';
+  }
+  const idxs=[0,Math.floor(n/2),n-1].filter((v,i,a)=>a.indexOf(v)===i);
+  out+=idxs.map(i=>'<text x="'+cx(i)+'" y="'+(H-8)+'" class="xl">'+esc(days[i].day.slice(5))+'</text>').join('');
+  const legend='<div class="legend">'+
+    '<span><i style="background:rgba(76,139,245,.6)"></i>machines completed (left)</span>'+
+    '<span><i style="background:#8a93a2"></i>lowest→peak</span>'+
+    '<span><i style="background:var(--ink)"></i>median</span>'+
+    '<span><i style="background:#d4a017;border-radius:50%"></i>mean</span>'+
+    '<span class="muted">durations on the right axis'+(thrIgnGaps?' · gaps > '+thrGapHrs+'h ignored':'')+'</span></div>';
+  return legend+'<svg viewBox="0 0 '+W+' '+H+'" class="chart" preserveAspectRatio="xMidYMid meet">'+out+'</svg>';
+}
+async function drawThroughputStats(c){
+  c=c||document.getElementById('stChart'); if(!c) return;
+  c.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    await thrFetch();
+    // date range defaults to the FIRST log of the current selection (Blake's rule)
+    if(statsDatesAuto){
+      const e=thrEarliest(statsRoom);
+      if(e){ statsFrom=e; statsTo=new Date().toISOString().slice(0,10);
+        const f=document.getElementById('stFrom'), t=document.getElementById('stTo');
+        if(f) f.value=statsFrom; if(t) t.value=statsTo; }
+    }
+    const ms=thrSel(statsRoom,statsFrom,statsTo);
+    const days=thrDayStats(ms);
+    const head='<div class="muted" style="margin-bottom:8px">'+ms.length+' machine'+(ms.length!==1?'s':'')+' completed over '+days.length+' day'+(days.length!==1?'s':'')+(statsRoom?' · '+esc(statsRoom):'')+'</div>';
+    c.innerHTML=head+svgComboChart(days);
+  }catch(e){ c.innerHTML='<div class="empty">Could not load throughput.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+// ---- Timing tab: the machine leaderboard --------------------------------
+async function loadTiming(g){
+  const ph=document.getElementById('placeholder');
+  ph.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    if(!DATA) await load();
+    await thrFetch(true);                    // tab entry / Refresh = fresh data
+    if(typeof g==='number'&&tabStale(g)) return;
+    if(thrDatesAuto||!thrFrom){ const e=thrEarliest(thrRoom); thrFrom=e||''; thrTo=new Date().toISOString().slice(0,10); }
+    ph.innerHTML='<div class="statsctl">'+
+      '<select id="thRoom">'+thrRoomOptions()+'</select>'+
+      '<select id="thSort"><option value="slow">Slowest first</option><option value="fast">Fastest first</option></select>'+
+      '<input type="date" id="thFrom"> <span class="muted">to</span> <input type="date" id="thTo">'+
+      '<label class="prm"><input type="checkbox" id="thGapIgn"> Ignore gaps &gt; <input type="number" id="thGapHrs" min="0.5" step="0.5" style="width:62px"> h</label>'+
+      '</div><div id="thSummary" class="summary"></div><div id="thTable"></div>';
+    const el=id=>document.getElementById(id);
+    el('thRoom').value=thrRoom; el('thSort').value=thrSort; el('thFrom').value=thrFrom; el('thTo').value=thrTo;
+    el('thGapIgn').checked=thrIgnGaps; el('thGapHrs').value=thrGapHrs;
+    el('thRoom').onchange=e=>{ thrRoom=e.target.value; thrDatesAuto=true;
+      const d=thrEarliest(thrRoom); thrFrom=d||''; thrTo=new Date().toISOString().slice(0,10);
+      el('thFrom').value=thrFrom; el('thTo').value=thrTo; thrDrawTable(); };
+    el('thSort').onchange=e=>{ thrSort=e.target.value; thrDrawTable(); };
+    el('thFrom').onchange=e=>{ thrFrom=e.target.value; thrDatesAuto=false; thrDrawTable(); };
+    el('thTo').onchange=e=>{ thrTo=e.target.value; thrDatesAuto=false; thrDrawTable(); };
+    el('thGapIgn').onchange=e=>{ thrIgnGaps=e.target.checked; thrDrawTable(); };
+    el('thGapHrs').onchange=e=>{ thrGapHrs=Math.max(.5,+e.target.value||3); e.target.value=thrGapHrs; thrDrawTable(); };
+    thrDrawTable();
+  }catch(e){ ph.innerHTML='<div class="empty">Could not load Timing.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+function thrShortTs(s){ return esc(String(s||'').slice(5,16).replace('T',' ')); }
+function thrDrawTable(){
+  const box=document.getElementById('thTable'), sum=document.getElementById('thSummary');
+  if(!box) return;
+  const ms=thrSel(thrRoom,thrFrom,thrTo).map(m=>({m,adj:thrAdj(m)}));
+  ms.sort((a,b)=>thrSort==='fast'?(a.adj-b.adj):(b.adj-a.adj));
+  if(thrCol&&thrColDir){
+    ms.sort((a,b)=>{
+      const ka=thrColKey(a), kb=thrColKey(b);
+      const c=(typeof ka==='number'&&typeof kb==='number')?(ka-kb):String(ka).localeCompare(String(kb));
+      return thrColDir===2?-c:c;
+    });
+  }
+  if(sum){
+    const a=ms.map(x=>x.adj).slice().sort((x,y)=>x-y), n=a.length;
+    const med=n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):0, mean=n?a.reduce((s,x)=>s+x,0)/n:0;
+    sum.innerHTML=[['Machines',n,''],['Median',n?fmtDur(med):'—','var(--accent)'],['Mean',n?fmtDur(mean):'—','#d4a017'],
+      ['Peak (slowest)',n?fmtDur(a[n-1]):'—','var(--red)'],['Lowest (fastest)',n?fmtDur(a[0]):'—','var(--green)']]
+      .map(([l,v,c])=>'<div class="stat"><div class="n"'+(c?' style="color:'+c+'"':'')+'>'+v+'</div><div class="l">'+esc(l)+'</div></div>').join('');
+  }
+  const th=Math.max(.5,+thrGapHrs||3)*3600;
+  const rows=ms.map((x,i)=>{
+    const m=x.m;
+    const g=(m.gaps&&m.gaps[0])||null;
+    const gapTxt=g?(fmtDur(g.secs)+' <span class="muted">at '+thrShortTs(g.at)+'</span>'+((thrIgnGaps&&g.secs>th)?' <span class="gapx">excluded</span>':'')):'—';
+    const tl=(m.apps||[]).map((a,ai,arr)=>{
+      const prev=ai?arr[ai-1].ts:m.start;
+      const step=Math.max(0,Math.round((Date.parse(a.ts)-Date.parse(prev))/1000));
+      const nm=a.app==='__gp__'?'GP update':a.app==='__cm__'?'CM actions':a.app;
+      return '<span style="white-space:nowrap">'+esc(nm)+' <span class="muted">'+thrShortTs(a.ts).slice(6)+' (+'+fmtDur(step)+')</span></span>';
+    }).join(' <span class="muted">→</span> ');
+    return '<tr class="throw" onclick="thrTgl('+i+')"><td class="n">'+(i+1)+'</td><td><b>'+esc(m.machine)+'</b></td><td>'+esc(m.rk)+'</td>'+
+      '<td>'+thrShortTs(m.start)+'</td><td>'+thrShortTs(m.finish)+'</td><td class="n">'+fmtDur(x.adj)+'</td>'+
+      '<td>'+gapTxt+'</td><td>'+esc((m.sticks||[]).join(', '))+'</td></tr>'+
+      '<tr class="thdet" id="thdet'+i+'" style="display:none"><td colspan="8">'+
+        (thrIgnGaps&&x.adj!==m.secs?('<div class="muted" style="margin-bottom:4px">Wall clock '+fmtDur(m.secs)+' · '+fmtDur(m.secs-x.adj)+' of gaps ignored</div>'):'')+
+        (tl||'<span class="muted">no per-app timeline</span>')+'</td></tr>';
+  }).join('');
+  const hdr=(col,label,cls)=>{
+    const on=thrCol===col&&thrColDir;
+    return '<th class="sortable'+(cls?' '+cls:'')+'" onclick="thrHdr(\''+col+'\')" title="Click: sort ascending · again: descending · again: back to normal">'+label+(on?(' <span class="sarr">'+(thrColDir===1?'&#9650;':'&#9660;')+'</span>'):'')+'</th>';
+  };
+  box.innerHTML=rows?('<div class="ltable"><h3>'+(thrSort==='fast'?'Fastest':'Slowest')+' machines · click a row for its app-by-app timeline</h3>'+
+    '<table><thead><tr><th class="n">#</th>'+hdr('machine','Machine')+hdr('room','Room')+hdr('start','Start')+hdr('finish','Finish')+hdr('dur','Duration','n')+hdr('gap','Longest gap')+hdr('stick','Stick')+'</tr></thead><tbody>'+rows+'</tbody></table></div>')
+    :'<div class="empty">No completed machines in this range.</div>';
+}
+function thrTgl(i){ const d=document.getElementById('thdet'+i); if(d) d.style.display=d.style.display==='none'?'':'none'; }
+
+async function loadBurndown(){
+  const ph=document.getElementById('placeholder');
+  ph.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    const d=await (await fetch('/api/burndown',{headers:{'Accept':'application/json'}})).json();
+    if(!d.ok) throw new Error(d.error||'error');
+    const series=(d.series||[]).map(s=>({day:s.day,n:s.touched}));
+    const rem=(d.target&&d.touchedTotal<d.target)?' · '+(d.target-d.touchedTotal)+' remaining':'';
+    const head='<div class="muted" style="margin-bottom:8px">'+d.touchedTotal+' of '+(d.target||'?')+' machines onboarded'+rem+'</div>';
+    ph.innerHTML='<div class="stchart">'+head+svgChart(series,'machines onboarded',d.target||0)+'</div>';
+  }catch(e){ ph.innerHTML='<div class="empty">Could not load burndown.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+async function loadErrors(g){
+  const ph=document.getElementById('placeholder');
+  try{
+    const d=await (await fetch('/api/errors',{headers:{'Accept':'application/json'}})).json();
+    if(tabStale(g)) return;
+    if(!d.ok) throw new Error(d.error||'error');
+    const codeRows=(d.byCode||[]).map(r=>'<tr><td>'+esc(r.code)+'</td><td class="n">'+r.n+'</td><td>'+esc(r.machines)+'</td><td>'+esc(r.worstMachine||'—')+(r.worstMachineN?' <span class="muted">('+r.worstMachineN+')</span>':'')+'</td></tr>').join('')||'<tr><td colspan="4" class="muted">No errors recorded.</td></tr>';
+    const appRows=(d.byApp||[]).map(r=>'<tr><td>'+esc(r.app_id)+'</td><td class="n">'+r.n+'</td><td>'+esc(r.machines)+'</td></tr>').join('')||'<tr><td colspan="3" class="muted">No errors recorded.</td></tr>';
+    const machRows=(d.byMachine||[]).map(r=>'<tr><td>'+esc(r.machine)+'</td><td class="n">'+r.n+'</td></tr>').join('')||'<tr><td colspan="2" class="muted">No errors recorded.</td></tr>';
+    ph.innerHTML='<div class="ltables">'+
+      '<div class="ltable"><h3>Most common errors</h3><table><thead><tr><th>Code</th><th class="n">Count</th><th>Machines</th><th>Worst machine</th></tr></thead><tbody>'+codeRows+'</tbody></table></div>'+
+      '<div class="ltable"><h3>Programs with the most errors</h3><table><thead><tr><th>Program</th><th class="n">Errors</th><th>Machines</th></tr></thead><tbody>'+appRows+'</tbody></table></div>'+
+      '<div class="ltable"><h3>Machines with the most errors</h3><table><thead><tr><th>Machine</th><th class="n">Errors</th></tr></thead><tbody>'+machRows+'</tbody></table></div>'+
+    '</div>';
+  }catch(e){ ph.innerHTML='<div class="empty">Could not load errors.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+async function loadFeed(g){
+  const ph=document.getElementById('placeholder');
+  try{
+    const d=await (await fetch('/api/feed',{headers:{'Accept':'application/json'}})).json();
+    if(tabStale(g)) return;
+    if(!d.ok) throw new Error(d.error||'error');
+    const verb=v=>v==='installed'?'installed':v==='error'?'error on':v==='removed'?'removed':v;
+    const rows=(d.feed||[]).map(r=>'<div class="row"><span class="m">'+esc(r.machine)+'</span><span class="pill '+esc(r.verdict)+'">'+esc(verb(r.verdict))+'</span> <span>'+esc(r.app_id)+(r.code?' <span class="muted">('+esc(r.code)+')</span>':'')+'</span><span class="t">'+esc(r.ts||r.received_at||'')+'</span></div>').join('')||'<div class="row muted">No recent activity.</div>';
+    ph.innerHTML='<div class="feed">'+rows+'</div>';
+  }catch(e){ ph.innerHTML='<div class="empty">Could not load the feed.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+
+// Building label for a room. Whatever the master pushed as building_abbr IS the
+// label - the dashboard invents nothing and special-cases no campus.
+//
+// (There used to be a relabelRooms() hook here that rewrote one specific
+// abbreviation by room number, to split one building's two carts into two
+// progress bars. That was site-specific display surgery living in shared code.
+// If two rooms should head up separate cards, give them separate abbreviations
+// in the master's buildings table and every consumer - grid grouping, wall
+// cards, popovers, inspector, structural signatures, Time Machine - follows,
+// because they all read room.abbr already.)
+function bldgLabel(room){ return (room && room.abbr) || '—'; }
+async function load(){
+  document.getElementById('gen').textContent='loading…';
+  try{
+    const url = '/api/fleet' + (selectedYear ? ('?year='+encodeURIComponent(selectedYear)) : '');
+    const d = await (await fetch(url,{headers:{'Accept':'application/json'}})).json();
+    if(!d.ok) throw new Error(d.error||'error');
+    DATA=d; if(d.year!=null) selectedYear=String(d.year); populateYears(d);
+    const h=fleetHash(d); if(h!==lastHash){ lastHash=h; lastChange=Date.now(); }
+    render(d); loadAlerts(); loadFeedStrip();
+  }catch(e){
+    document.getElementById('rooms').innerHTML='<div class="empty">Could not load fleet data.<br><span class="muted">'+esc(e.message)+'</span></div>';
+    document.getElementById('gen').textContent='';
+  }
+}
+
+function render(d){
+  const s=d.summary;
+  // the "updated … · N observations" line is intentionally hidden (see #gen display:none)
+  document.getElementById('gen').textContent='';
+  document.getElementById('index').innerHTML='';   // folded into the summary cards below
+  // every tally is now a "90 MACHINES"-style card: big number (tinted to its colour) + label
+  const cards=[['machines',s.machines,'']].concat([
+    ['Done',s.green,'var(--green)'],['GP/CM owed',s.purple,'var(--purple)'],
+    ['Missing programs',s.yellow,'var(--yellow)'],['Never touched',s.red,'var(--red)'],
+    ['GP/CM only',s.orange,'var(--orange)'],['Reported missing',s.blue,'var(--blue)'],
+    ['Broken',s.broken,'var(--blue)']
+  ]);
+  document.getElementById('summary').innerHTML = cards.map(([label,n,color])=>
+    '<div class="stat"><div class="n"'+(color?' style="color:'+color+'"':'')+'>'+(n==null?0:n)+'</div><div class="l">'+esc(label)+'</div></div>'
+  ).join('');
+
+  renderGrid(d.rooms, searchQ.trim().toLowerCase());
+  if(wallOpen) renderWall(d);
+}
+
+// ---- fleet grid rendering (items 17 + 21) ----
+// The LIVE grid is diff-rendered: when the room structure is unchanged, tiles are
+// updated IN PLACE so the CSS 4s colour transition actually plays (a rebuilt node
+// can't animate). When the structure changes (new machine, new room, new building)
+// we rebuild and mark the newcomers with spawn/appear animations. Time Machine uses
+// the same builders but always rebuilds (clickable=false, no ids, no animations).
+function idSafe(s){ return String(s==null?'':s).replace(/[^A-Za-z0-9_-]/g,'_'); }
+function tileMatch(room, m, q){ return !q || (m.machine && m.machine.toLowerCase().includes(q)) || (''+room.room).toLowerCase().includes(q); }
+// a slot's mark identity: its hostname if seen, else "<room>#<num>" so never-seen
+// slots can carry marks too (a real sighting later wins by newest-ts).
+function markIdFor(roomKey, m){ return m.machine || (roomKey+'#'+m.num); }
+function tileClass(room, m, q, spawn){
+  return 'tile '+m.state+(m.untouched&&!m.mark?' untouched':'')+((q&&!tileMatch(room,m,q))?' dim':'')+(spawn?' spawn':'')
+    +((selMode&&selSet.has(markIdFor(room.room,m)))?' sel':'');
+}
+// A ledger machine with no assigned number is drawn at a POSITION, not at a machine
+// number - showing that position would claim a number nobody assigned. Show '?' and
+// let the hostname in the tooltip identify it.
+function tileNum(m){ return m.unnumbered ? '?' : m.num; }
+function tileInner(m){ const nt=(m.pcNotes&&m.pcNotes.length)?m.pcNotes.map(n=>n.note).join('\n'):m.pcNote; return tileNum(m)+(m.error?'<span class="badge">'+m.error+'</span>':'')+(nt?'<span class="notedot" title="'+esc(nt)+'"></span>':''); }
+function tileHtml(room, m, si, q, clickable, spawn, idp){
+  // click key is the machine NUMBER, not the array index — on a filtered/past-year
+  // grid slot index != num, so an index-based click opens the wrong machine.
+  // idp namespaces the id ('' = live grid → "t_...", 'tm' = Time Machine → "tmt_...")
+  // so the hidden live grid and the Time Machine grid never share element ids.
+  const p = idp || '';
+  const id = (clickable || p) ? ' id="'+p+'t_'+idSafe(room.room)+'_'+m.num+'"' : '';
+  const oc = clickable ? ' onclick="openSlot(\''+esc(room.room)+'\','+m.num+')"' : '';
+  return {match: tileMatch(room,m,q), html:'<div class="'+tileClass(room,m,q,spawn)+'" title="'+esc(m.machine||('#'+m.num))+'"'+id+oc+'>'+tileInner(m)+'</div>'};
+}
+function roomDone(room){ return room.slots.filter(m=>m.state==='green').length; }
+function roomCnt(room){ return room.slots.filter(m=>m.state!=='blue'&&m.state!=='broken').length; }
+function roomBlockHtml(room, q, clickable, marks, idp){
+  const p = idp || '';
+  const tiles = room.slots.map((m,si)=>tileHtml(room,m,si,q,clickable, marks?(!marks.tiles.has(room.room+':'+m.num)):false, p));
+  const anyMatch = tiles.some(t=>t.match);
+  const isNew = marks ? !marks.rooms.has(room.room) : false;
+  const rid = (clickable || p) ? ' id="'+p+'r_'+idSafe(room.room)+'"' : '';
+  return {anyMatch, html:'<div class="room'+(isNew?' appear':'')+'"'+rid+(q&&!anyMatch?' style="display:none"':'')+'><h3 class="roomsub">'+esc(room.room)+' · '+room.size+' machines <span class="muted rsub">('+roomDone(room)+'/'+roomCnt(room)+' done)</span></h3><div class="tiles">'+tiles.map(t=>t.html).join('')+'</div></div>'};
+}
+function bldgBarStyle(done,cnt){ const pct=cnt?Math.round(100*done/cnt):0; return {pct, css:'linear-gradient(to right, rgba(46,160,67,.45) '+pct+'%, var(--panel2) '+pct+'%)'}; }
+function groupByBldg(rooms){
+  const groups={}, order=[];
+  for(const room of (rooms||[])){ const b=bldgLabel(room); if(!groups[b]){groups[b]=[]; order.push(b);} groups[b].push(room); }
+  return {groups, order};
+}
+function fleetGridHtml(rooms, q, clickable, marks, idp){
+  const p = idp || '';
+  const {groups, order}=groupByBldg(rooms);
+  let out='', anyShown=false;
+  for(const b of order){
+    const blocks=groups[b].map(r=>roomBlockHtml(r,q,clickable,marks,p));
+    const anyMatch=blocks.some(x=>x.anyMatch);
+    if(!clickable && q && !anyMatch) continue;      // static grid (TM): just omit
+    if(anyMatch) anyShown=true;
+    let done=0, cnt=0;
+    for(const r of groups[b]){ done+=roomDone(r); cnt+=roomCnt(r); }
+    const bar=bldgBarStyle(done,cnt);
+    const isNew = marks ? !marks.bldgs.has(b) : false;
+    const bid = (clickable || p) ? ' id="'+p+'b_'+idSafe(b)+'"' : '';
+    out+='<div class="bldg'+(isNew?' appear':'')+'"'+bid+(clickable&&q&&!anyMatch?' style="display:none"':'')+'><h2 class="bldghdr" onclick="tglBldg(this)" style="background:'+bar.css+'"><span>'+esc(b)+'</span><span class="rpct">'+done+'/'+cnt+' done · '+bar.pct+'%</span></h2><div class="bldgbody">'+blocks.map(x=>x.html).join('')+'</div></div>';
+  }
+  const empty='<div class="empty"'+(clickable?' id="gridEmpty"':'')+(((out&&anyShown)||(!q&&out))?' style="display:none"':'')+'>'+(q?'No machines match.':'No observations yet.')+'</div>';
+  return out+empty;
+}
+function tglBldg(h){ const b=h.nextElementSibling; if(b) b.style.display=b.style.display==='none'?'':'none'; }
+
+// structural signature: rebuild only when rooms/sizes/grouping change
+let gridSig='', seenTiles=new Set(), seenRooms=new Set(), seenBldgs=new Set();
+// signature must include the actual machine numbers present per room, so a NEW machine
+// (same room + size) forces a rebuild instead of a silent no-op in the in-place path.
+function gridSignature(rooms){ return (rooms||[]).map(r=>bldgLabel(r)+'|'+r.room+'|'+r.size+'|'+r.slots.map(s=>s.num).join(',')).join(';'); }
+function snapshotGrid(rooms){
+  seenTiles=new Set(); seenRooms=new Set(); seenBldgs=new Set();
+  for(const r of (rooms||[])){ seenRooms.add(r.room); seenBldgs.add(bldgLabel(r)); for(const m of r.slots) seenTiles.add(r.room+':'+m.num); }
+}
+function renderGrid(rooms, q){
+  const box=document.getElementById('rooms');
+  const sig=gridSignature(rooms);
+  if(sig===gridSig && box.querySelector('.tile')){ updateGridInPlace(rooms,q); return; }
+  const marks = gridSig ? {tiles:seenTiles, rooms:seenRooms, bldgs:seenBldgs} : null;  // no spawn on first paint
+  box.innerHTML = fleetGridHtml(rooms, q, true, marks);
+  gridSig=sig; snapshotGrid(rooms);
+}
+function updateGridInPlace(rooms, q){
+  const {groups, order}=groupByBldg(rooms);
+  let anyShown=false;
+  for(const b of order){
+    let done=0, cnt=0, bAny=false;
+    for(const room of groups[b]){
+      let rAny=false;
+      room.slots.forEach((m,si)=>{
+        const el=document.getElementById('t_'+idSafe(room.room)+'_'+m.num); if(!el) return;
+        const cls=tileClass(room,m,q,false);
+        if(el.className!==cls) el.className=cls;              // colour change -> 4s CSS transition
+        const inner=tileInner(m); if(el.innerHTML!==inner) el.innerHTML=inner;
+        const ttl=m.machine||('#'+m.num); if(el.title!==ttl) el.title=ttl;
+        if(tileMatch(room,m,q)) rAny=true;
+      });
+      const rEl=document.getElementById('r_'+idSafe(room.room));
+      if(rEl){ rEl.style.display=(q&&!rAny)?'none':''; const rs=rEl.querySelector('.rsub'); if(rs) rs.textContent='('+roomDone(room)+'/'+roomCnt(room)+' done)'; }
+      done+=roomDone(room); cnt+=roomCnt(room); if(rAny) bAny=true;
+    }
+    const bEl=document.getElementById('b_'+idSafe(b));
+    if(bEl){
+      bEl.style.display=(q&&!bAny)?'none':'';
+      const bar=bldgBarStyle(done,cnt);
+      const h=bEl.querySelector('.bldghdr'); if(h) h.style.background=bar.css;
+      const p=bEl.querySelector('.rpct'); if(p) p.textContent=done+'/'+cnt+' done · '+bar.pct+'%';
+    }
+    if(bAny) anyShown=true;
+  }
+  const ge=document.getElementById('gridEmpty'); if(ge) ge.style.display=(q&&!anyShown)?'':'none';
+}
+
+// builds the machine-detail HTML shared by the side drawer AND the wall popover
+function slotInfoHtml(roomKey, num){
+  const room = DATA.rooms.find(r=>r.room===roomKey); if(!room) return null;
+  const m = room.slots.find(s=>s.num===num); if(!m) return null;
+  window._panelMachine = markIdFor(roomKey, m);
+  const body={};
+  if(m.untouched){
+    const markLine=m.mark?('<div class="marknote">'+esc(m.markNote||((m.markBy||'someone')+' set '+m.mark))+'</div>'):'';
+    const why = m.mark ? '' : (m.state==='red' ? 'Never touched by a stick — needs programs installed, plus GP update and CM actions.'
+                                               : 'Never touched by a stick — this room only owes a GP update and CM actions (no program cards).');
+    body.innerHTML='<h3>'+esc(roomKey)+' · #'+m.num+'</h3>'+markLine+(why?'<div class="muted">'+esc(why)+'</div>':'')+
+      '<div class="marklabel">Mark this slot</div>'+markBtnRow('panelMark')+notesSectionHtml(m);
+  } else {
+    const stName={green:'Done',purple:'Programs done, GP/CM owed',yellow:'Missing programs',blue:'Reported missing (excluded)',broken:'Broken (excluded)'}[m.state]||m.state;
+    const owed=(m.owed&&m.owed.length)?' · owes '+m.owed.join(' + '):'';
+    const markLine=m.mark?('<div class="marknote">'+esc(m.markNote||((m.markBy||'someone')+' set '+m.mark))+'</div>'):'';
+    const apps=m.apps.map((a,ai)=>{
+      const log=a.has_log?' <a href="/api/log?id='+encodeURIComponent(a.obs_id)+'" target="_blank" rel="noopener" style="color:var(--accent)">log</a>':'';
+      const nc=a.neverChecked?' <span class="ncflag" title="installed, but never marked as checked">&#9888; unchecked</span>':'';
+      const nco=a.notCounted?' <span class="muted" title="excluded from fleet health — a per-user preference refresh, not a broken machine">(not counted)</span>':'';
+      return '<div class="app appclick" onclick="tglApp('+ai+')"><span>'+esc(a.app)+(a.code?' <span class="muted">'+esc(a.code)+'</span>':'')+nc+nco+log+'</span><span class="pill '+esc(a.verdict)+'">'+esc(a.verdict)+'</span></div>'+
+             '<div class="appdet" id="appdet'+ai+'" style="display:none">'+esc(appDetail(a))+'</div>';
+    }).join('');
+    const na=(m.notAttempted&&m.notAttempted.length)
+      ? m.notAttempted.map(a=>'<div class="app"><span>'+esc(a)+'</span><span class="pill snapshot">never attempted</span></div>').join('')
+      : '';
+    body.innerHTML='<h3>'+esc(m.machine)+'</h3>'+markLine+'<div class="muted">Room '+esc(roomKey)+(room.abbr?' ('+esc(room.abbr)+')':'')+(m.unnumbered?' · no machine number assigned':' · #'+m.num)+(m.assigned?' <span title="placed by the master\'s assignment ledger, not by its hostname">(assigned)</span>':'')+'</div>'+
+      '<div class="mstate st-'+esc(m.state)+'">'+esc(stName)+esc(owed)+'</div>'+
+      '<div class="kv"><span>Programs</span><b>'+m.installed+' installed · '+m.missing+' missing · '+m.error+' error'+(m.error===1?'':'s')+'</b></div>'+
+      (m.imagedGen?'<div class="kv"><span>Imaged</span><b>'+esc(fmtDay(m.imagedGen))+'</b></div>':'')+
+      (m.lastTs?'<div class="kv"><span>Last seen</span><b>'+esc(fmtWhen(m.lastTs))+'</b></div>':'')+
+      ((m.sticks&&m.sticks.length)?'<div class="kv"><span>Stick</span><b>'+m.sticks.map(esc).join(', ')+'</b></div>':'')+
+      '<div class="marklabel">Mark this machine</div>'+markBtnRow('panelMark')+notesSectionHtml(m)+
+      '<div class="muted" style="margin-top:12px;font-size:11px">Click a program for its install detail.</div><div style="margin-top:6px">'+apps+na+'</div>';
+  }
+  return body.innerHTML;
+}
+function openSlot(roomKey, num){
+  if(selMode){ selFromSlot(roomKey,num); return; }   // in multi-select mode, a click toggles selection
+  // same-tile click toggles the drawer closed (matches the wall popover)
+  const key=roomKey+':'+num;
+  if(document.getElementById('panel').classList.contains('open')&&window._panelKey===key){ closePanel(); return; }
+  const h=slotInfoHtml(roomKey, num); if(h==null) return;
+  document.getElementById('panelBody').innerHTML=h;
+  window._panelKey=key;
+  document.getElementById('panel').classList.add('open');
+}
+// ---- wall popover: same info, floated NEXT to the clicked tile ----
+function openWallPop(roomKey, num, ev){
+  if(ev){ ev.stopPropagation(); }
+  /* muted for now (Blake 2026-08-20): wallThud(); */
+  // clicking the SAME machine again toggles the popover closed
+  const key='m:'+roomKey+':'+num;
+  if(wallPopKey===key){ closeWallPop(); return; }
+  const h=slotInfoHtml(roomKey, num); if(h==null) return;
+  closePanel(); document.getElementById('panelBody').innerHTML='';   // no duplicate element ids
+  wallPopKey=key;   // AFTER closePanel - closePanel clears the key via closeWallPop
+  const p=document.getElementById('wallPop');
+  p.querySelector('.wpb').innerHTML=h;
+  p.style.display='block';
+  placeWallPop((ev&&ev.target&&ev.target.getBoundingClientRect)?ev.target.getBoundingClientRect():{left:innerWidth/2,right:innerWidth/2,top:innerHeight/2});
+}
+let wallPopKey='';
+function closeWallPop(){ const p=document.getElementById('wallPop'); if(p) p.style.display='none'; wallPopKey=''; }
+let _wac=null;
+function _wctx(){
+  _wac=_wac||new (window.AudioContext||window.webkitAudioContext)();
+  if(_wac.state==='suspended') _wac.resume();
+  return _wac;
+}
+// machine tile: a soft THUD - sine dropping 150->48Hz like a fingertip on a desk,
+// plus a tiny lowpassed click so it has an edge without being a beep
+function wallThud(){
+  try{
+    const ac=_wctx(), t=ac.currentTime;
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(48,t+.09);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.5,t+.007); g.gain.exponentialRampToValueAtTime(.0001,t+.17);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+.19);
+    const n=ac.createBufferSource(), nb=ac.createBuffer(1,ac.sampleRate*.03,ac.sampleRate), nd=nb.getChannelData(0);
+    for(let i=0;i<nd.length;i++) nd[i]=(Math.random()*2-1)*(1-i/nd.length);
+    n.buffer=nb;
+    const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+    const ng=ac.createGain(); ng.gain.setValueAtTime(.12,t); ng.gain.exponentialRampToValueAtTime(.0001,t+.03);
+    n.connect(lp); lp.connect(ng); ng.connect(ac.destination); n.start(t); n.stop(t+.04);
+  }catch(e){}
+}
+// room card: PAPER/FOLDER rustle - two short filtered-noise swishes, the second
+// quieter and higher, like a folder flipping open
+function wallPaper(){
+  try{
+    const ac=_wctx(), t=ac.currentTime;
+    const swish=(at,dur,f0,f1,vol)=>{
+      const b=ac.createBuffer(1,Math.ceil(ac.sampleRate*dur),ac.sampleRate), d=b.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+      const src=ac.createBufferSource(); src.buffer=b;
+      const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=.7;
+      bp.frequency.setValueAtTime(f0,at); bp.frequency.exponentialRampToValueAtTime(f1,at+dur*.8);
+      const g=ac.createGain(); g.gain.setValueAtTime(.0001,at);
+      g.gain.exponentialRampToValueAtTime(vol,at+.018); g.gain.exponentialRampToValueAtTime(.0001,at+dur);
+      src.connect(bp); bp.connect(g); g.connect(ac.destination); src.start(at); src.stop(at+dur+.01);
+    };
+    swish(t,.16,1100,3200,.2);
+    swish(t+.09,.13,1800,4200,.11);
+  }catch(e){}
+}
+// clamp the popover next to a rect (used by both the machine and room popovers)
+function placeWallPop(t){
+  const p=document.getElementById('wallPop');
+  const W=Math.min(380,innerWidth*.9);
+  let x=t.right+12; if(x+W>innerWidth-8) x=t.left-W-12; if(x<8) x=8;
+  p.style.left=x+'px'; p.style.top='8px';
+  const H=p.offsetHeight;
+  let y=t.top-10; if(y+H>innerHeight-10) y=innerHeight-10-H; if(y<8) y=8;
+  p.style.top=y+'px';
+}
+// ---- room popover: click a room CARD -> everything being installed in that room ----
+async function openWallRoomPop(roomKey, ev){
+  if(ev) ev.stopPropagation();
+  /* muted for now (Blake 2026-08-20): wallPaper(); */
+  // same-card click toggles closed, matching the machine tiles
+  const key='r:'+roomKey;
+  if(wallPopKey===key){ closeWallPop(); return; }
+  const room=DATA&&DATA.rooms?DATA.rooms.find(r=>r.room===roomKey):null; if(!room) return;
+  closePanel(); document.getElementById('panelBody').innerHTML='';
+  wallPopKey=key;   // AFTER closePanel - closePanel clears the key via closeWallPop
+  const p=document.getElementById('wallPop');
+  const rect=(ev&&ev.currentTarget&&ev.currentTarget.getBoundingClientRect)?ev.currentTarget.getBoundingClientRect():{left:innerWidth/2,right:innerWidth/2,top:innerHeight/2};
+  const title='<h3 style="margin:0 0 2px">'+esc((room.abbr?room.abbr+' ':'')+roomKey)+'</h3>';
+  p.querySelector('.wpb').innerHTML=title+'<div class="muted">Loading room software\u2026</div>';
+  p.style.display='block'; placeWallPop(rect);
+  let cfg=[];
+  try{
+    const d=await (await fetch('/api/auditinfo?room='+encodeURIComponent(roomKey),{headers:{'Accept':'application/json'}})).json();
+    if(d.ok&&Array.isArray(d.apps)) cfg=d.apps;
+  }catch(e){}
+  // just what the CONFIG says this room gets - no live counts, no bars (Blake:
+  // "that adds more tracking but adds confusion")
+  const rows=cfg.map(n=>'<div class="wrp"><span title="'+esc(n)+'">'+esc(n)+'</span></div>').join('')
+    ||'<div class="muted">No software configured for this room.</div>';
+  p.querySelector('.wpb').innerHTML=title+
+    '<div class="muted" style="margin-bottom:10px">'+(cfg.length?cfg.length+' program'+(cfg.length===1?'':'s')+' per the room config':'')+
+    (room.progNums?'<br>numbers split: only #'+Math.min(...room.progNums)+'\u2013#'+Math.max(...room.progNums)+' get software here':'')+'</div>'+rows;
+  placeWallPop(rect);
+}
+function appDetail(a){
+  const when=a.ts?(' on '+fmtWhen(a.ts)):'';
+  if(a.verdict==='installed') return 'Installed'+when+'.'+(a.neverChecked?' But it was never marked as checked (nobody confirmed opening it).':'');
+  if(a.verdict==='error') return 'Failed'+(a.code?(' with '+a.code):'')+when+'.';
+  if(a.verdict==='missing') return 'Missing'+when+'.';
+  if(a.verdict==='removed') return 'Removed'+when+'.';
+  if(a.verdict==='opened') return 'Opened / verified'+when+'.';
+  return (a.verdict||'seen')+when+'.';
+}
+function tglApp(i){ const d=document.getElementById('appdet'+i); if(d) d.style.display=d.style.display==='none'?'':'none'; }
+
+// ---- Time Machine (item 20): scrub a slider OR hit Play to watch the fleet build itself ----
+// Renders through a diff engine like the live fleet: new machines pop in (.spawn), new rooms
+// / buildings rise in (.appear), and tiles morph colour via the 4s CSS transition — so both
+// scrubbing and playback are smooth, not snap-cuts. Its own id namespace ('tm') + its own
+// diff state keep it from ever touching the hidden live grid.
+let tmBounds=null, tmAt=null, tmLoT=0, tmHiT=0;
+let tmSeenTiles=new Set(), tmSeenRooms=new Set(), tmSeenBldgs=new Set(), tmGridSig='';
+let tmPlaying=false, tmFrames=null;
+function tmAtFrom(v){ const d=new Date(tmLoT+(tmHiT-tmLoT)*(v/1000)); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,23); }
+function tmResetDiff(){ tmSeenTiles=new Set(); tmSeenRooms=new Set(); tmSeenBldgs=new Set(); tmGridSig=''; }
+async function loadTimeMachine(){
+  const ph=document.getElementById('placeholder'); ph.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    if(!tmBounds){ const b=await (await fetch('/api/timemachine',{headers:{'Accept':'application/json'}})).json(); tmBounds=(b&&b.bounds)||{}; }
+    const hi=(tmBounds&&tmBounds.hi)||new Date().toISOString();
+    const lo=(tmBounds&&tmBounds.lo)||hi;
+    if(!tmAt) tmAt=hi;
+    tmLoT=Date.parse(lo); tmHiT=Date.parse(hi); tmFrames=null; tmPlaying=false;
+    ph.innerHTML='<div class="muted" style="margin-bottom:8px">Drag to replay any past moment — or hit <b>Play</b> to watch the whole fleet build itself, from the first stick to now.</div>'+
+      '<div class="tmctl"><button id="tmPlay" class="refresh" onclick="tmTogglePlay()">▶ Play</button>'+
+      '<input type="range" id="tmSlider" min="0" max="1000" value="1000"><span id="tmLabel" class="muted"></span></div>'+
+      '<div id="tmIdx"></div><div id="tmGrid"></div>';
+    // observation ts is LOCAL wall-clock (no offset); emit the slider instant in that same
+    // shape so the string compare on the server lines up (not UTC .toISOString()).
+    const sl=document.getElementById('tmSlider');
+    sl.value=String(tmHiT<=tmLoT?1000:Math.round(1000*(Date.parse(tmAt)-tmLoT)/(tmHiT-tmLoT)));
+    document.getElementById('tmLabel').textContent=new Date(tmAt).toLocaleString();
+    sl.oninput=e=>{ if(tmPlaying) tmStop(); tmAt=tmAtFrom(+e.target.value); document.getElementById('tmLabel').textContent=new Date(tmAt).toLocaleString(); clearTimeout(window._tmT); window._tmT=setTimeout(()=>tmDraw(),150); };
+    tmResetDiff(); tmDraw();
+  }catch(e){ ph.innerHTML='<div class="empty">Could not load Time Machine.<br><span class="muted">'+esc(e.message)+'</span></div>'; }
+}
+function tmIdxHtml(s){ s=s||{}; return '<div class="index" style="margin:10px 0 12px">'+[['cg','Done',s.green],['cp','GP/CM owed',s.purple],['cy','Missing programs',s.yellow],['cr','Never touched',s.red],['co','GP/CM only',s.orange],['cb','Reported missing',s.blue]].map(([c,l,n])=>'<span class="ix"><i class="'+c+'"></i><b>'+(n||0)+'</b> '+l+'</span>').join('')+'</div>'; }
+function tmSnapshot(rooms){ tmSeenTiles=new Set(); tmSeenRooms=new Set(); tmSeenBldgs=new Set(); for(const r of (rooms||[])){ tmSeenRooms.add(r.room); tmSeenBldgs.add(bldgLabel(r)); for(const m of r.slots) tmSeenTiles.add(r.room+':'+m.num); } }
+// diff render: in-place colour morph when the layout is unchanged, full paint with
+// spawn/appear marks when new rooms/tiles arrive since the last frame.
+function tmRenderGrid(rooms){
+  const g=document.getElementById('tmGrid'); if(!g) return;
+  const sig=gridSignature(rooms);
+  if(sig===tmGridSig && g.querySelector('.tile')){
+    for(const room of (rooms||[])) room.slots.forEach(m=>{
+      const el=document.getElementById('tmt_'+idSafe(room.room)+'_'+m.num); if(!el) return;
+      const cls=tileClass(room,m,'',false); if(el.className!==cls) el.className=cls;   // colour change -> 4s CSS transition
+      const inner=tileInner(m); if(el.innerHTML!==inner) el.innerHTML=inner;
+      const ttl=m.machine||('#'+m.num); if(el.title!==ttl) el.title=ttl;
+    });
+    return;
+  }
+  const marks = tmGridSig ? {tiles:tmSeenTiles, rooms:tmSeenRooms, bldgs:tmSeenBldgs} : null;  // no spawn on first paint
+  g.innerHTML = fleetGridHtml(rooms, '', false, marks, 'tm');
+  tmGridSig=sig; tmSnapshot(rooms);
+}
+async function tmDraw(){
+  const g=document.getElementById('tmGrid'); if(!g) return;
+  try{
+    const d=await (await fetch('/api/timemachine?at='+encodeURIComponent(tmAt),{headers:{'Accept':'application/json'}})).json();
+    if(!d.ok) throw new Error(d.error||'error');
+    const ix=document.getElementById('tmIdx'); if(ix) ix.innerHTML=tmIdxHtml(d.summary);
+    tmRenderGrid(d.rooms);
+  }catch(e){ g.innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+// ---- playback: buffer evenly-spaced frames, then diff-render through them on a timer ----
+const TM_FRAMES=24, TM_MS=650;
+function tmSetPlayBtn(t){ const b=document.getElementById('tmPlay'); if(b) b.textContent=t; }
+function tmStop(){ tmPlaying=false; tmSetPlayBtn('▶ Play'); }
+async function tmTogglePlay(){
+  if(tmPlaying){ tmStop(); return; }
+  if(tmHiT<=tmLoT) return;                       // no span to play
+  tmPlaying=true; tmSetPlayBtn('⏸ Pause');
+  if(!tmFrames){                                 // buffer once so playback never stutters
+    tmSetPlayBtn('… buffering');
+    const ats=[]; for(let i=0;i<TM_FRAMES;i++) ats.push(tmAtFrom(Math.round(1000*i/(TM_FRAMES-1))));
+    try{ tmFrames=await Promise.all(ats.map(async a=>{ try{ const d=await (await fetch('/api/timemachine?at='+encodeURIComponent(a),{headers:{'Accept':'application/json'}})).json(); return d.ok?{at:a,summary:d.summary,rooms:d.rooms}:null; }catch(_){ return null; } })); }
+    catch(_){ tmFrames=null; }
+    if(!tmPlaying) return;                        // user paused mid-buffer
+    if(!tmFrames){ tmStop(); return; }
+    tmSetPlayBtn('⏸ Pause');
+  }
+  tmResetDiff();                                  // start clean so machines pop in as they first appear
+  const sl=document.getElementById('tmSlider');
+  for(let i=0;i<tmFrames.length;i++){
+    if(!tmPlaying) return;
+    if(!document.getElementById('tmGrid')){ tmStop(); return; }   // user left the tab
+    const f=tmFrames[i]; if(!f) continue;
+    tmAt=f.at;
+    const ix=document.getElementById('tmIdx'); if(ix) ix.innerHTML=tmIdxHtml(f.summary);
+    tmRenderGrid(f.rooms);
+    if(sl) sl.value=String(Math.round(1000*i/(tmFrames.length-1)));
+    const lb=document.getElementById('tmLabel'); if(lb) lb.textContent=new Date(f.at).toLocaleString();
+    await new Promise(r=>setTimeout(r, TM_MS));
+  }
+  if(tmPlaying){ tmPlaying=false; tmSetPlayBtn('↻ Replay'); }
+}
+
+// ---- Software Auditor (item 18, EXPERIMENTAL) ----
+const AUDIT_URL='https://labboard-api.REPLACE.workers.dev/audit';
+function auRow(program, prev){
+  const tr=document.createElement('tr');
+  const p=prev||{};
+  const prevTxt=(p.note||p.current)?((p.current?('was v'+p.current+'. '):'')+(p.note||'')+(p.at?(' ('+p.by+', '+p.at+')'):'')):'—';
+  tr.innerHTML='<td><input class="p" value="'+esc(program||'')+'"></td><td><input class="cv"></td><td><input class="rv" placeholder="empty = keep"></td>'+
+    '<td style="text-align:center"><input type="checkbox" class="lt"></td>'+
+    '<td class="prevnotes">'+esc(prevTxt)+'</td>'+
+    '<td><input class="nt" placeholder="notes for the install"></td>';
+  return tr;
+}
+function loadAuditor(){
+  const ph=document.getElementById('placeholder');
+  ph.innerHTML=
+    '<div class="wipbanner">&#9888; EXPERIMENTAL — “update / audit your existing software packages.” A work-in-progress test tool, separate from the official software-request system. Submissions are saved but not yet acted on.</div>'+
+    '<div class="auditform">'+
+      '<div class="arow"><label>Your name</label><input id="auBy"></div>'+
+      '<div class="arow"><label>Department</label><input id="auDept"></div>'+
+      '<div class="arow"><label>Room(s)</label><input id="auRoom" placeholder="e.g. 10101 — comma-separate for several"><button class="refresh" id="auLoad" style="margin-left:8px">Load room</button></div>'+
+      '<div class="awarn" id="auWarn" style="display:none">WARNING: Selecting multiple rooms requests the following for multiple rooms — it does NOT let you fill out multiple rooms at once. To do that, please submit multiple forms.</div>'+
+      '<table class="atable"><thead><tr><th>Program</th><th>Current version</th><th>Version requested</th><th>Latest</th><th>Instructions + notes from last year</th><th>Notes</th></tr></thead><tbody id="auBody"></tbody></table>'+
+      '<div class="arowbtns"><button class="refresh" id="auAdd">+ Add Missing Program</button><button class="refresh" id="auSubmit">Submit</button></div>'+
+      '<div id="auMsg" class="muted" style="margin-top:8px"></div>'+
+    '</div>';
+  const body=document.getElementById('auBody');
+  body.appendChild(auRow('')); body.appendChild(auRow('')); body.appendChild(auRow(''));
+  document.getElementById('auRoom').addEventListener('input',e=>{
+    document.getElementById('auWarn').style.display = e.target.value.includes(',')?'':'none';
+  });
+  document.getElementById('auLoad').onclick=auLoadRoom;
+  document.getElementById('auAdd').onclick=()=>body.appendChild(auRow(''));
+  document.getElementById('auSubmit').onclick=submitAudit;
+}
+async function auLoadRoom(){
+  // prefill the table with everything the room has per the master config, plus each
+  // program's most recent note from earlier audits ("notes from last year").
+  const msg=document.getElementById('auMsg');
+  const first=(document.getElementById('auRoom').value.split(',')[0]||'').replace(/[^A-Za-z0-9]/g,'');
+  if(!first){ msg.textContent='Type a room first (e.g. 10101).'; return; }
+  msg.textContent='Loading room '+first+'…';
+  try{
+    const d=await (await fetch('/api/auditinfo?room='+encodeURIComponent(first),{headers:{'Accept':'application/json'}})).json();
+    if(!d.ok) throw new Error(d.error||'error');
+    const body=document.getElementById('auBody'); body.innerHTML='';
+    if(d.apps&&d.apps.length){ for(const a of d.apps) body.appendChild(auRow(a,(d.prev||{})[a])); msg.textContent=d.apps.length+' program(s) loaded from the room config.'; }
+    else { body.appendChild(auRow('')); body.appendChild(auRow('')); msg.textContent='No config pushed for room '+first+' yet (master Refresh fills it) — blank rows instead.'; }
+  }catch(e){ msg.textContent='Could not load the room: '+e.message; }
+}
+async function submitAudit(){
+  const rows=[...document.querySelectorAll('#auBody tr')].map(tr=>({
+    program:tr.querySelector('.p').value, current:tr.querySelector('.cv').value,
+    requested:tr.querySelector('.rv').value, latest:tr.querySelector('.lt').checked, notes:tr.querySelector('.nt').value
+  })).filter(r=>r.program||r.current||r.requested||r.notes);
+  const roomsList=document.getElementById('auRoom').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!roomsList.length) roomsList.push('');
+  const msg=document.getElementById('auMsg'); msg.textContent='Submitting…';
+  try{
+    let okAll=true;
+    for(const room of roomsList){
+      const body={ by:document.getElementById('auBy').value, department:document.getElementById('auDept').value, room, rows };
+      const r=await fetch(AUDIT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const d=await r.json(); if(!d.ok){ okAll=false; msg.textContent='Could not submit for '+(room||'(no room)')+': '+(d.error||'error'); break; }
+    }
+    if(okAll) msg.textContent='Submitted for '+roomsList.length+' room(s) — thank you!';
+  }catch(e){ msg.textContent='Could not submit: '+e.message; }
+}
+// ---- Print Station (items 12-14): room multi-select + ALL, options, opens the
+//      print-first sheet in a new tab (browser print = paper or Save-as-PDF; the master
+//      can also render the same URLs to real .pdf files via Edge headless). ----
+async function loadPrint(g){
+  const ph=document.getElementById('placeholder');
+  if(!DATA){ ph.innerHTML='<div class="muted">Loading rooms…</div>'; try{ await load(); }catch(e){} }
+  if(tabStale(g)) return;
+  const rooms=(DATA?DATA.rooms:[]).map(r=>r.room);
+  const opts=rooms.map(r=>'<label class="prm"><input type="checkbox" class="prRoom" value="'+esc(r)+'"> '+esc(r)+'</label>').join('');
+  ph.innerHTML='<h3>Print Station</h3><div class="muted" style="margin-bottom:12px">Pick rooms, pick a sheet, print. Sheets open print-ready — Ctrl-P for paper or Save-as-PDF.</div>'+
+    '<div class="prbox"><b>Rooms</b><div class="prlist"><label class="prm"><input type="checkbox" id="prAll" checked> <b>ALL</b></label>'+opts+'</div></div>'+
+    '<div class="prbox"><b>Recheck to-do list</b><div class="muted">Machines needing a recheck + what each needs, with checkboxes.</div>'+
+      '<label class="prm"><input type="checkbox" id="prIgnUntouched"> Ignore machines not touched by sticks</label>'+
+      '<label class="prm"><input type="checkbox" id="prIgnUnchecked"> Ignore rooms not checked by sticks</label>'+
+      '<div style="margin-top:8px"><button class="refresh" onclick="openPrint(\'recheck\')">Open recheck sheet</button></div></div>'+
+    '<div class="prbox"><b>Program config sheets</b><div class="muted">Per-room installed-program checklist from the master config. One room per page — rooms never share a page.</div>'+
+      '<div style="margin-top:8px"><button class="refresh" onclick="openPrint(\'config\')">Open config sheets</button></div></div>';
+  document.getElementById('prAll').onchange=e=>{ if(e.target.checked) document.querySelectorAll('.prRoom').forEach(c=>c.checked=false); };
+  document.querySelectorAll('.prRoom').forEach(c=>c.onchange=()=>{ if([...document.querySelectorAll('.prRoom')].some(x=>x.checked)) document.getElementById('prAll').checked=false; });
+}
+function openPrint(sheet){
+  const all=document.getElementById('prAll').checked;
+  const picked=[...document.querySelectorAll('.prRoom')].filter(c=>c.checked).map(c=>c.value);
+  const rooms=(all||!picked.length)?'all':picked.join(',');
+  let u='/api/print/'+sheet+'?rooms='+encodeURIComponent(rooms);
+  if(sheet==='recheck'){
+    if(document.getElementById('prIgnUntouched').checked) u+='&ignoreUntouched=1';
+    if(document.getElementById('prIgnUnchecked').checked) u+='&ignoreUnchecked=1';
+  }
+  window.open(u,'_blank','noopener');
+}
+
+// ---- Data Tools (item 15): isolate / restore / DELETE, all behind Basic Auth ----
+async function loadDataTools(){
+  const ph=document.getElementById('placeholder');
+  ph.innerHTML='<h3>Data Tools</h3><div class="wipbanner">&#9888; These move or permanently remove fleet data. Isolated data is invisible to every tab until restored. Every action is logged and raises an alert.</div>'+
+    '<div class="prbox"><b>Isolate a chunk</b><div class="muted">Match by any combination — at least one filter is required.</div>'+
+    '<div class="arow"><label>Machine</label><input id="dtMachine" placeholder="e.g. 10101LAB34-20"></div>'+
+    '<div class="arow"><label>Stick</label><input id="dtStick" placeholder="stick id, e.g. 51ccf2"></div>'+
+    '<div class="arow"><label>From (ts ≥)</label><input id="dtFrom" placeholder="2026-08-18T00:00"></div>'+
+    '<div class="arow"><label>To (ts ≤)</label><input id="dtTo" placeholder="2026-08-19T00:00"></div>'+
+    '<div class="arow"><label>Why</label><input id="dtWhy" placeholder="reason (shows in the log)"></div>'+
+    '<button class="refresh" onclick="dtIsolate()">Isolate matching data</button> <span id="dtMsg" class="muted"></span></div>'+
+    '<div class="prbox"><b>Isolated batches</b><div id="dtList" class="muted">Loading…</div></div>';
+  dtList();
+}
+async function dtPost(body){ const r=await fetch('/api/admin/data',{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'labboard'},body:JSON.stringify(body)}); return r.json(); }
+async function dtList(){
+  const el=document.getElementById('dtList'); if(!el) return;
+  try{
+    const d=await dtPost({action:'list'});
+    if(!d.ok) throw new Error(d.error||'error');
+    el.innerHTML=(d.batches&&d.batches.length)?d.batches.map(b=>
+      '<div class="app"><span><b>'+esc(b.iso_batch)+'</b><br><span class="muted">'+b.rows_n+' rows · '+b.machines+' machine(s) · '+esc(b.lo_ts||'?')+' → '+esc(b.hi_ts||'?')+(b.iso_why?' · '+esc(b.iso_why):'')+' · by '+esc(b.iso_by||'?')+'</span></span>'+
+      '<span><button class="refresh" onclick="dtRestore(\''+esc(b.iso_batch)+'\')">Restore</button> <button class="refresh dtdel" onclick="dtDelete(\''+esc(b.iso_batch)+'\')">Delete…</button></span></div>').join('')
+      :'Nothing is isolated right now.';
+  }catch(e){ el.textContent='Could not list: '+e.message; }
+}
+async function dtIsolate(){
+  const v=id=>document.getElementById(id).value.trim();
+  const msg=document.getElementById('dtMsg'); msg.textContent='Working…';
+  try{
+    const d=await dtPost({action:'isolate',by:'dashboard',machine:v('dtMachine'),stick:v('dtStick'),from:v('dtFrom'),to:v('dtTo'),why:v('dtWhy')});
+    msg.textContent=d.ok?('Isolated '+d.moved+' row(s) into batch '+d.batch+'.'):('Refused: '+(d.error||'error'));
+    if(d.ok){ lastHash=''; dtList(); }
+  }catch(e){ msg.textContent='Failed: '+e.message; }
+}
+async function dtRestore(batch){
+  try{ const d=await dtPost({action:'restore',batch}); alert(d.ok?('Restored '+d.restored+' row(s).'):('Refused: '+(d.error||'error'))); lastHash=''; dtList(); }
+  catch(e){ alert('Failed: '+e.message); }
+}
+async function dtDelete(batch){
+  const t=prompt('This PERMANENTLY deletes batch\n'+batch+'\nfrom the isolated area. There is no undo.\n\nType DELETE to confirm:');
+  if(t===null) return;
+  try{ const d=await dtPost({action:'delete',batch,confirm:t}); alert(d.ok?('Deleted '+d.deleted+' row(s) permanently.'):('Refused: '+(d.error||'error'))); dtList(); }
+  catch(e){ alert('Failed: '+e.message); }
+}
+async function loadAlerts(){
+  const bar=document.getElementById('alertbar');
+  try{
+    const d=await (await fetch('/api/alerts',{headers:{'Accept':'application/json'}})).json();
+    const open=(d.ok&&d.alerts)?d.alerts.filter(a=>!a.acknowledged):[];
+    if(open.length){
+      bar.innerHTML='<b>&#9888; '+open.length+' open alert'+(open.length>1?'s':'')+':</b> '+
+        open.slice(0,6).map(a=>'<span class="a">['+esc(a.level)+'] '+esc(a.kind)+' &mdash; '+esc(a.detail)+(a.stick_id?' ('+esc(a.stick_id)+')':'')+' <span class="muted">'+esc(a.ts)+'</span></span>').join('');
+      bar.classList.add('show');
+    } else bar.classList.remove('show');
+  }catch(e){bar.classList.remove('show')}
+}
+function closePanel(){document.getElementById('panel').classList.remove('open');window._panelKey='';closeWallPop();}
+
+// ---- tech marks from the dashboard (single machine + multi-select) ----
+let selMode=false; const selSet=new Set();
+function tsLocal(){ const n=new Date(); return new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,23); }
+const MARK_STATES=[['broken','Broken'],['missing','Reported missing'],['verified','Verified'],['override','Override good'],['clear','Clear']];
+async function markMachines(machines, state){
+  try{
+    const r=await fetch('/api/admin/mark',{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'labboard'},
+      body:JSON.stringify({machines,state,ts:tsLocal()})});
+    return await r.json();
+  }catch(e){ return {ok:false,error:e.message}; }
+}
+function markBtnRow(handler){ return '<div class="markrow">'+MARK_STATES.map(([st,lbl])=>'<button class="mbtn m-'+st+'" onclick="'+handler+'(\''+st+'\')">'+lbl+'</button>').join('')+'</div>'; }
+async function panelMark(state){
+  const machine=window._panelMachine; if(!machine) return;
+  const d=await markMachines([machine],state);
+  if(d.ok){ closePanel(); lastHash=''; poll(); } else alert('Mark failed: '+(d.error||'error'));
+}
+// ---- per-PC notes (free-form scratchpad, orthogonal to marks) ----
+// A LOG, not a single slot (Blake 2026-08-21). The API now sends pcNotes
+// (every note since the last clear, newest first); each renders as its own
+// block, and the entry box is always BLANK - typing adds a note, it never
+// edits the old one. "Clear all notes" posts one empty note, which the fold
+// treats as a cutoff hiding everything before it (history stays in D1).
+function notesSectionHtml(m){
+  const list=(m.pcNotes&&m.pcNotes.length)?m.pcNotes:(m.pcNote?[{note:m.pcNote,by:m.pcNoteBy,ts:m.pcNoteTs}]:[]);
+  const cur=list.map(n=>'<div class="pcnote">'+esc(n.note)+
+    '<div class="muted" style="margin-top:3px">— '+esc(n.by||'someone')+(n.ts?(' · '+esc(String(n.ts).slice(0,16).replace('T',' '))):'')+'</div></div>').join('');
+  return '<div class="marklabel">'+(list.length>1?('Notes ('+list.length+')'):'Note')+'</div>'+cur+
+    '<textarea id="pcNoteBox" class="notebox" rows="2" maxlength="500" placeholder="add a note — e.g. cracked screen, RMA pending"></textarea>'+
+    '<div class="markrow"><button class="mbtn m-verified" onclick="savePcNote()">Add note</button>'+
+    (list.length?'<button class="mbtn m-clear" onclick="clearPcNote()">Clear all notes</button>':'')+'</div>';
+}
+async function saveNote(machine, note){
+  try{
+    const r=await fetch('/api/admin/note',{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'labboard'},
+      body:JSON.stringify({machine,note,ts:tsLocal()})});
+    return await r.json();
+  }catch(e){ return {ok:false,error:e.message}; }
+}
+async function savePcNote(){
+  const machine=window._panelMachine; if(!machine) return;
+  const box=document.getElementById('pcNoteBox');
+  const txt=box?box.value.trim():'';
+  if(!txt) return;   // blank box = nothing to add; an EMPTY note is the clear-all signal and must never be sent by this button
+  const d=await saveNote(machine, txt);
+  if(d.ok){ closePanel(); lastHash=''; poll(); } else alert('Note failed: '+(d.error||'error'));
+}
+async function clearPcNote(){
+  const machine=window._panelMachine; if(!machine) return;
+  const d=await saveNote(machine,'');
+  if(d.ok){ closePanel(); lastHash=''; poll(); } else alert('Note failed: '+(d.error||'error'));
+}
+function toggleSelMode(){
+  selMode=!selMode; if(!selMode) selSet.clear();
+  document.body.classList.toggle('selmode',selMode);
+  const btn=document.getElementById('selBtn'); if(btn) btn.textContent=selMode?'Cancel select':'Select';
+  updateSelBar(); if(DATA) renderGrid(DATA.rooms, searchQ.trim().toLowerCase());
+}
+function selFromSlot(roomKey,num){
+  const room=DATA.rooms.find(r=>r.room===roomKey); if(!room) return;
+  const m=room.slots.find(s=>s.num===num); if(!m) return;
+  const id=markIdFor(roomKey,m);   // hostname if seen, else "<room>#<num>" for a never-seen slot
+  if(selSet.has(id)) selSet.delete(id); else selSet.add(id);
+  const el=document.getElementById('t_'+idSafe(roomKey)+'_'+num); if(el) el.classList.toggle('sel',selSet.has(id));
+  updateSelBar();
+}
+function updateSelBar(){
+  const bar=document.getElementById('selbar'); if(!bar) return;
+  bar.classList.toggle('show',selMode);
+  const c=document.getElementById('selcount'); if(c) c.textContent=selSet.size+' selected';
+}
+async function bulkMark(state){
+  if(!selSet.size){ alert('Select machines first (click tiles).'); return; }
+  const d=await markMachines([...selSet],state);
+  if(d.ok){ selSet.clear(); selMode=false; document.body.classList.remove('selmode');
+    const btn=document.getElementById('selBtn'); if(btn) btn.textContent='Select';
+    updateSelBar(); lastHash=''; poll(); }
+  else alert('Mark failed: '+(d.error||'error'));
+}
+async function loadFeedStrip(){
+  const el=document.getElementById('feedstrip');
+  try{
+    const d=await (await fetch('/api/feed?limit=4',{headers:{'Accept':'application/json'}})).json();
+    if(!d.ok||!d.feed||!d.feed.length){ el.classList.remove('show'); return; }
+    el.innerHTML='<span class="fs muted">Live:</span>'+d.feed.map(r=>{
+      const v=r.verdict==='installed'?'<span class="ok">installed</span>':r.verdict==='error'?'<span class="err">error</span>':esc(r.verdict);
+      return '<span class="fs"><b>'+esc(r.machine)+'</b> '+v+' '+esc(r.app_id)+(r.code?' <span class="muted">('+esc(r.code)+')</span>':'')+'</span>';
+    }).join('');
+    el.classList.add('show');
+  }catch(e){ el.classList.remove('show'); }
+}
+
+// ---------- Wall mode: TV view of the whole fleet, autoscaled, read-only ----------
+let wallOpen=false, wallSig='';
+function openWall(){
+  wallOpen=true; wallSig='';
+  document.getElementById('wall').classList.add('on');
+  if(DATA) renderWall(DATA);
+  try{ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }catch(e){}
+}
+function closeWall(){
+  wallOpen=false;
+  document.getElementById('wall').classList.remove('on');
+  try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+}
+// leaving browser fullscreen (Esc) also leaves wall mode - the two travel together
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&wallOpen) closeWall(); });
+// every bar carries ALL its segments permanently (zero-width when empty) so a state
+// change ANIMATES the slivers growing/shrinking instead of rebuilding the bar.
+const WALL_BAR_STATES=[['green','--green'],['purple','--purple'],['yellow','--yellow'],['orange','--orange'],['red','--red'],['blue','--blue'],['broken','--blue']];
+let wallStruct='', wallLgSig='', wallTotShown=null;
+// count-up/down animation for the big machines total
+function wallCountTo(el, target){
+  const from=(wallTotShown==null)?target:wallTotShown;
+  wallTotShown=target;
+  if(from===target){ el.textContent=target; return; }
+  const t0=performance.now(), dur=800;
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  (function step(t){
+    const k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+    el.textContent=Math.round(from+(target-from)*e);
+    if(k<1) requestAnimationFrame(step);
+  })(t0);
+}
+function wallBarUpdate(room){
+  const sc={}; for(const m of room.slots) sc[m.state]=(sc[m.state]||0)+1;
+  for(const [st] of WALL_BAR_STATES){
+    const el=document.getElementById('wwb_'+idSafe(room.room)+'_'+st);
+    if(el) el.style.flexGrow=String(sc[st]||0);
+  }
+}
+function renderWall(d){
+  if(!wallOpen||!d) return;
+  const s=d.summary||{};
+  // plain-language legend; labels are trusted static strings (orange carries markup)
+  const lgSig=JSON.stringify([s.green,s.yellow,s.purple,s.orange,s.red,s.blue,s.broken,s.machines]);
+  if(lgSig!==wallLgSig){
+    wallLgSig=lgSig;
+    document.getElementById('wallLg').innerHTML=[
+      ['--green','Done',s.green],
+      ['--yellow','Check for Missing Programs',s.yellow],
+      ['--purple','Needs GP/CM Run by a Stick',s.purple],
+      ['--orange','<u><b>Only</b></u> Needs GP/CM Run by a Stick',s.orange],
+      ['--red','Never Touched',s.red],
+      ['--blue','Broken/Missing',(s.blue||0)+(s.broken||0)]
+    ].map(([c,l,n])=>'<span class="wlgi"><i style="background:var('+c+')"></i><b>'+(n||0)+'</b> '+l+'</span>').join('');
+    const tot=document.getElementById('wallTot');
+    if(!tot.querySelector('b')) tot.innerHTML='<b>0</b> machines';
+    wallCountTo(tot.querySelector('b'), s.machines||0);
+    fitWallLegend();
+  }
+  const rooms=(d.rooms||[]).slice().sort((a,b)=>b.size-a.size);
+  const struct=rooms.map(r=>r.room+':'+r.size+':'+r.slots.map(m=>m.num).join(',')).join('|');
+  const sig=rooms.map(r=>r.slots.map(m=>m.state).join('')).join('|');
+  if(struct===wallStruct){
+    if(sig===wallSig) return;
+    wallSig=sig;
+    // IN-PLACE: recolour tiles + glide the bars - nothing is torn down, so the
+    // flex-grow transition actually plays (a rebuilt node can't animate).
+    for(const r of rooms){
+      r.slots.forEach(m=>{
+        const el=document.getElementById('wwt_'+idSafe(r.room)+'_'+m.num); if(!el) return;
+        const cls='wt '+m.state+(m.untouched?' untouched':'');
+        if(el.className!==cls) el.className=cls;
+        const ttl=m.machine||('#'+m.num); if(el.title!==ttl) el.title=ttl;
+      });
+      wallBarUpdate(r);
+      const c=document.getElementById('wwc_'+idSafe(r.room));
+      if(c) c.textContent=roomDone(r)+'/'+roomCnt(r);
+    }
+    return;
+  }
+  wallStruct=struct; wallSig=sig;
+  document.getElementById('wallGrid').innerHTML=rooms.map(r=>{
+    const span=Math.max(2,Math.min(12,Math.round(r.size/7)));
+    const rid=idSafe(r.room);
+    const tiles=r.slots.map(m=>'<i class="wt '+esc(m.state)+(m.untouched?' untouched':'')+'" id="wwt_'+rid+'_'+m.num+'" title="'+esc(m.machine||('#'+m.num))+'" onclick="openWallPop(\''+esc(r.room)+'\','+m.num+',event)">'+tileNum(m)+'</i>').join('');
+    const bar=WALL_BAR_STATES.map(([st,c])=>'<i id="wwb_'+rid+'_'+st+'" style="flex:0 1 0;background:var('+c+')"></i>').join('');
+    return '<div class="wc" style="grid-column:span '+span+'" onclick="openWallRoomPop(\''+esc(r.room)+'\',event)"><div class="wch"><span>'+esc((r.abbr?r.abbr+' ':'')+r.room)+'</span><div class="wbar">'+bar+'</div><span class="wcd" id="wwc_'+rid+'">'+roomDone(r)+'/'+roomCnt(r)+'</span></div><div class="wtl">'+tiles+'</div></div>';
+  }).join('');
+  // set initial bar fills AFTER the paint so first appearance glides up from zero
+  requestAnimationFrame(()=>{ for(const r of rooms) wallBarUpdate(r); });
+  fitWallGrid(); fitWallLegend();
+}
+// binary-search the biggest tile size where every room still fits the screen.
+// The fullscreen TRANSITION fires a resize while the layout is still squashed —
+// measuring then concludes "nothing fits" and slams the tiles to the 6px floor
+// with no later event to rescue them. So: never fit a mid-transition grid
+// (retry instead), and always run a settling pass once the dust clears.
+function fitWallGrid(){
+  const g=document.getElementById('wallGrid'), w=document.getElementById('wall');
+  if(!g||!wallOpen) return;
+  if(g.clientHeight<150){ clearTimeout(window._wfw); window._wfw=setTimeout(fitWallGrid,250); return; }
+  let lo=6, hi=120, best=6;
+  for(let i=0;i<12;i++){
+    const mid=(lo+hi)/2;
+    w.style.setProperty('--wts',mid+'px');
+    // HEIGHT ONLY — tiles wrap, so width cannot truly overflow, but scrollWidth
+    // vs clientWidth disagrees by a subpixel after the fullscreen resize (vw
+    // padding rounding), which made every size "fail" and collapsed the board
+    // to the 6px floor. The mockup only ever checked height; match it.
+    if(g.scrollHeight<=g.clientHeight){ best=mid; lo=mid; } else hi=mid;
+  }
+  w.style.setProperty('--wts',best+'px');
+}
+// shrink the legend font just enough that all six entries + spacing hold ONE line
+function fitWallLegend(){
+  const lg=document.getElementById('wallLg'), w=document.getElementById('wall');
+  if(!lg||!wallOpen||!lg.clientWidth) return;
+  let lo=.45, hi=1, best=.45;
+  for(let i=0;i<10;i++){
+    const mid=(lo+hi)/2;
+    w.style.setProperty('--wlf',mid);
+    if(lg.scrollWidth<=lg.clientWidth+1){ best=mid; lo=mid; } else hi=mid;
+  }
+  w.style.setProperty('--wlf',best);
+}
+function fitWallBoth(){ fitWallGrid(); fitWallLegend(); }
+function fitWallSoon(){ clearTimeout(window._wfw); window._wfw=setTimeout(fitWallBoth,150); clearTimeout(window._wfw2); window._wfw2=setTimeout(fitWallBoth,700); }
+window.addEventListener('resize',()=>{ if(wallOpen) fitWallSoon(); });
+document.addEventListener('fullscreenchange',()=>{ if(wallOpen) fitWallSoon(); });
+
+let yearSig='';
+function populateYears(d){
+  const sel=document.getElementById('year');
+  const pages=(d.years&&Array.isArray(d.years.pages))?d.years.pages.slice():[];
+  if(!pages.length){ sel.style.display='none'; yearSig=''; return; }
+  pages.sort((a,b)=>(+b.label)-(+a.label)); // newest first
+  const cur = d.year!=null?String(d.year):(d.years.current!=null?String(d.years.current):'');
+  // rebuild the dropdown ONLY when the label set changes — otherwise a 5s poll would
+  // reset the control under the user's cursor. Selection is kept in sync separately.
+  const sig=pages.map(p=>p.label).join(',');
+  if(sig!==yearSig){ sel.innerHTML=pages.map(p=>'<option value="'+esc(p.label)+'">'+esc(p.label)+'</option>').join(''); yearSig=sig; }
+  if(sel.value!==cur) sel.value=cur;
+  sel.style.display='';
+}
+// ---- dynamic polling (item 11): poll 5s; after 30 min with no change, drop to 60s;
+//      any change snaps back to 5s. Change = the fleet's colours/machines differ. ----
+let pollTimer=null, lastHash='', lastChange=Date.now();
+const POLL_FAST=5000, POLL_SLOW=60000, IDLE_MS=30*60*1000;
+function fleetHash(d){ try{ return JSON.stringify(d.summary)+'|'+(d.rooms||[]).map(r=>(r.slots||[]).map(s=>s.state+(s.machine||'')).join('')).join('|'); }catch(e){ return ''+Math.random(); } }
+function scheduleNext(){ if(pollTimer) clearTimeout(pollTimer); const idle=(Date.now()-lastChange)>IDLE_MS; pollTimer=setTimeout(poll, idle?POLL_SLOW:POLL_FAST); }
+async function poll(){ await load(); scheduleNext(); }
+
+document.getElementById('year').addEventListener('change',e=>{ selectedYear=e.target.value; poll(); });
+document.getElementById('refresh').onclick=()=>{ const k=TABS[activeTab-1].kind; if(k==='fleet') poll(); else loadTab(k); };
+document.getElementById('search').addEventListener('input',e=>{ searchQ=e.target.value; if(DATA&&activeTab===1) render(DATA); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){
+  const wp=document.getElementById('wallPop');
+  if(wp&&wp.style.display==='block'){ closeWallPop(); return; }
+  if(wallOpen) closeWall(); closePanel(); } });
+buildTabs(); selectTab(1); poll();
+</script>
+</body>
+</html>

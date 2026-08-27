@@ -1,0 +1,14 @@
+# Node / wrangler local state
+node_modules/
+.wrangler/
+
+# wrangler local-dev secrets — even a dummy DASH_PASSWORD stays out of the repo
+.dev.vars
+.dev.vars.*
+
+# Minted tokens never enter the repo; provision-tokens.ps1 writes them into the
+# LabDeploy config folder, which is gitignored on that side.
+tokens.json
+
+desktop.ini
+Thumbs.db

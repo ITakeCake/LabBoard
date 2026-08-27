@@ -1,0 +1,16 @@
+name = "labboard"
+pages_build_output_dir = "public"
+compatibility_date = "2025-01-01"
+
+# The dashboard reads observations straight from D1 (same database the Worker writes).
+# database_id is filled in after:  wrangler d1 create labboard
+[[d1_databases]]
+binding = "DB"
+database_name = "labboard"
+database_id = "REPLACE-AFTER-wrangler-d1-create"
+
+# Same failed-install log bucket the Worker writes; the dashboard reads it for the
+# error -> log link. Enable R2 in the dashboard, create the bucket, then UNCOMMENT.
+# [[r2_buckets]]
+# binding = "LOGS"
+# bucket_name = "labboard-logs"
